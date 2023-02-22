@@ -1,0 +1,5 @@
+scikit-learn
+funcy
+scikit-multilearn
+typer
+rich

@@ -1,5 +1,5 @@
 ## Introduction
-cvOPs is the open source tool to automate mask and annotation preprocessing before model training.
+cvOps is the open source tool to automate mask and annotation preprocessing before model training.
 
 ## Steps
 
@@ -15,29 +15,41 @@ cvOPs is the open source tool to automate mask and annotation preprocessing befo
 Example:
 .
 ├── images_dir
-│   ├── train
-│   ├── val
-|   ├── test
+│   ├── sample1
+│   ├── sample2
+|   ├── sample3
 |   
 ├── anns_dir
-│   ├── train.json
-│   ├── val.json
-│   ├── test.json
+│   ├── sample1.json
+│   ├── sample2.json
+│   ├── sample3.json
 
 python3 COCO.py visualize {images_dir} {anns_dir}
 ```
-` It doesn't work if you link to external disk.`
+:warning: It doesn't work if you link to external disk.
 
-1-2. Mask samples
+1-2. Mask samples :mask:
 ```bash
-python3 COCO.py visualize {images_dir} {anns_dir}
+python3 Mask.py visualize {images_dir} {anns_dir}
 ```
 
 2. Process annotations
 
 2-1. Merge COCO sample
 
-2-2. Convert Mask
+```bash
+python3 COCO.py merge {images_dir} {anns_dir}
+```
+
+2-2. Split COCO sample
+
+```bash
+python3 COCO.py split {annotation path} {path to train annotation} {path to test annotation} {split ratio between 0 and 1}
+# i.e. python3 COCO.py split anns/new.json results/train.json results/test.json 0.8
+```
+
+
+2-3. Convert Mask
 First, configure config file at `config/mask.yaml`
 
 ```bash
@@ -55,4 +67,8 @@ COCO relevant parts heavily relies on `COCO-Assistant`
 $ git clone https://github.com/ashnair1/COCO-Assistant.git
 cd COCO-Assistant/
 pip install .
+```
+`requirements.txt`
+```bash
+pip3 install -U scikit-learn
 ```
