@@ -44,8 +44,8 @@ python3 COCO.py merge {images_dir} {anns_dir}
 2-2. Split COCO sample
 
 ```bash
-python3 COCO.py split {annotation path} {path to train annotation} {path to test annotation} {split ratio between 0 and 1}
-# i.e. python3 COCO.py split anns/new.json results/train.json results/test.json 0.8
+python3 COCO.py split {annotation path} {path to train annotation} {path to test annotation} {split ratio between 0 and 1} {images path, optional}
+# i.e. python3 COCO.py split anns/new.json results/train/train.json results/test/test.json 0.8 images
 ```
 
 
@@ -64,11 +64,11 @@ python3 Mask.py show {mask_dir}
 
 COCO relevant parts heavily relies on `COCO-Assistant`
 ```bash
-$ git clone https://github.com/ashnair1/COCO-Assistant.git
+git clone https://github.com/ashnair1/COCO-Assistant.git
 cd COCO-Assistant/
 pip install .
 ```
 `requirements.txt`
 ```bash
-pip3 install -U scikit-learn
+pip3 install -r requirements.txt
 ```
