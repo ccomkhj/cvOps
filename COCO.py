@@ -5,8 +5,9 @@ import typer
 import json
 import funcy
 import numpy as np
+import os
 from typing import Optional
-from tools.helpers import filter_annotations, filter_images, save_coco
+from tools.helpers import filter_annotations, filter_images, save_coco, locate_images
 
 app = typer.Typer(help="Awesome cvOps Tool.", rich_markup_mode="rich")
 
@@ -77,10 +78,14 @@ def split(
     split: float = typer.Argument(
         default=0.8, help="A ratio of a split; a number in (0, 1)"
     ),
+    image_locate: Optional[str] = typer.Argument(
+        default = "",
+        help="Locate images based on the split if the value is given."),
     multi: Optional[bool] = typer.Argument(
         default=False,
         help="Split a multi-class dataset while preserving class distributions in train and test sets",
     ),
+    
 ):
 
     with open(ann_path, "rt", encoding="UTF-8") as annotations:
@@ -155,6 +160,26 @@ def split(
                     len(anns_train), train_path, len(anns_test), test_path
                 )
             )
+    if image_locate != "":
+        # if the path is given,
+
+        # Create folder of images next to train and test file
+        destDir = os.path.join(os.path.dirname(train_path), 'images')
+        os.makedirs(destDir, exist_ok=True)
+        
+        # Iterate the dictionary and send it to source and destination.
+        for train_obj in X_train:
+            file_name = train_obj.get('file_name')
+            source = os.path.join(image_locate, file_name)
+            destination = os.path.join(destDir, file_name)
+            locate_images(source, destination)
+        
+        for test_obj in X_test:
+            file_name = test_obj.get('file_name')
+            source = os.path.join(image_locate, file_name)
+            destination = os.path.join(destDir, file_name)
+            locate_images(source, destination)
+        
 
 
 if __name__ == "__main__":

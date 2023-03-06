@@ -5,7 +5,7 @@ from PIL import Image
 from typing import Dict, List
 import json
 import funcy
-
+import shutil
 
 def load(path: str) -> List[str]:
     """load files
@@ -67,3 +67,22 @@ def filter_images(images, annotations):
     annotation_ids = funcy.lmap(lambda i: int(i["image_id"]), annotations)
 
     return funcy.lfilter(lambda a: int(a["id"]) in annotation_ids, images)
+
+def locate_images(source: str, destination: str) -> None:
+    """locate images based on source and destination path."""
+    
+    try:
+        shutil.copy(source, destination)
+        print(f"File copied successfully at {destination}")
+    
+    # If source and destination are same
+    except shutil.SameFileError:
+        print("Source and destination represents the same file.")
+    
+    # If there is any permission issue
+    except PermissionError:
+        print("Permission denied.")
+    
+    # For other errors
+    except:
+        print("Error occurred while copying file.")
