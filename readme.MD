@@ -42,19 +42,39 @@ python3 COCO.py merge {images_dir} {anns_dir}
 ```
 
 2-2. Split COCO sample
+(Specify file name, check the example)
 
 ```bash
 python3 COCO.py split {annotation path} {path to train annotation} {path to test annotation} {split ratio between 0 and 1} {images path, optional}
 # i.e. python3 COCO.py split anns/new.json results/train/train.json results/test/test.json 0.8 images
 ```
+If your source doesn't include license, include the blank license.
+```json
+# blank case
+"licenses": [
+        {
+            "id": 0,
+            "name": "",
+            "url": ""
+        }
+    ],
+    ...
+```
 
-
-2-3. Convert Mask
+2-3. Convert Mask (pallete to binary mask)
 First, configure config file at `config/mask.yaml`
 
 ```bash
 python3 Mask.py convert {anns_dir} {mask_dir to save} 
 ```
+
+2-4. Convert Mask (COCO to binary mask)
+```bash
+python3 Mask.py convert {anns_dir} {mask_dir to save} 
+```
+if you want to consider all instances, add `--multi` tag in command.
+
+
 After converting, show the mask.
 ```bash
 python3 Mask.py show {mask_dir} 

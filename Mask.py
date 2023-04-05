@@ -1,9 +1,11 @@
-import matplotlib.pyplot as plt
 import os
-import yaml
+
 import cv2
+import matplotlib.pyplot as plt
 import typer
+import yaml
 from PIL import Image
+
 from tools.helpers import load, palette2mask
 
 app = typer.Typer(help="Awesome cvOps Tool.", rich_markup_mode="rich")

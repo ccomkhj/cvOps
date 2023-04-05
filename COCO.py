@@ -1,13 +1,17 @@
-from coco_assistant import COCO_Assistant
-from sklearn.model_selection import train_test_split
-from skmultilearn.model_selection import iterative_train_test_split
-import typer
 import json
-import funcy
-import numpy as np
 import os
 from typing import Optional
-from tools.helpers import filter_annotations, filter_images, save_coco, locate_images
+
+import funcy
+import numpy as np
+import typer
+from coco_assistant import COCO_Assistant
+from PIL import Image
+from pycocotools.coco import COCO
+from sklearn.model_selection import train_test_split
+from skmultilearn.model_selection import iterative_train_test_split
+
+from tools.helpers import filter_annotations, filter_images, locate_images, save_coco
 
 app = typer.Typer(help="Awesome cvOps Tool.", rich_markup_mode="rich")
 
@@ -69,6 +73,45 @@ def merge(
 
 
 @app.command()
+def convert(
+    ann_path: str = typer.Argument(..., help="Path to COCO annotations file."),
+    mask_save_dir: str = typer.Argument(..., help="Path to COCO annotations file."),
+    multi: bool = typer.Option(
+        False,
+        help="Make mask covering multi class. if false, it makes binary mask. (fore/background mask) by adding --multi",
+    ),
+):
+    coco = COCO(ann_path)
+
+    annsIds = coco.getAnnIds()
+    imgsIds = coco.getImgIds()
+    cat_ids = coco.getCatIds()
+
+    for imgId in imgsIds:
+        img = coco.imgs[imgId]
+        imgFileName = img.get("file_name")
+        imgShape = (img.get("height"), img.get("width"))
+        anns_ids = coco.getAnnIds(imgIds=img["id"], catIds=cat_ids, iscrowd=None)
+        anns = coco.loadAnns(anns_ids)
+
+        mask = np.zeros(imgShape, dtype=np.uint8)
+        for ann in anns:
+            if multi:
+                mask += coco.annToMask(ann) * ann["category_id"]
+            else:
+                # every mask has value 1. (binary)
+                mask += coco.annToMask(ann)
+
+        # save masks to BW images
+        file_path = os.path.join(
+            mask_save_dir,
+            imgFileName,
+        )
+        Image.fromarray(mask).convert("P").save(file_path)
+        print(f"Successfully generated mask file: {imgFileName}")
+
+
+@app.command()
 def split(
     ann_path: str = typer.Argument(..., help="Path to COCO annotations file."),
     train_path: str = typer.Argument(
@@ -79,13 +122,12 @@ def split(
         default=0.8, help="A ratio of a split; a number in (0, 1)"
     ),
     image_locate: Optional[str] = typer.Argument(
-        default = "",
-        help="Locate images based on the split if the value is given."),
-    multi: Optional[bool] = typer.Argument(
-        default=False,
-        help="Split a multi-class dataset while preserving class distributions in train and test sets",
+        default="", help="Locate images based on the split if the value is given."
     ),
-    
+    multi: bool = typer.Option(
+        False,
+        help="Make mask covering multi class. if false, it makes binary mask. (fore/background mask) by adding --multi",
+    ),
 ):
 
     with open(ann_path, "rt", encoding="UTF-8") as annotations:
@@ -164,23 +206,27 @@ def split(
         # if the path is given,
 
         # Create folder of images next to train and test file
-        destDir = os.path.join(os.path.dirname(train_path), 'images')
-        os.makedirs(destDir, exist_ok=True)
-        
+        destDir_train = os.path.join(os.path.dirname(train_path), "train_images")
+        os.makedirs(destDir_train, exist_ok=True)
+
         # Iterate the dictionary and send it to source and destination.
         for train_obj in X_train:
-            file_name = train_obj.get('file_name')
+            file_name = train_obj.get("file_name")
             source = os.path.join(image_locate, file_name)
-            destination = os.path.join(destDir, file_name)
+            destination = os.path.join(destDir_train, file_name)
             locate_images(source, destination)
-        
+
+        destDir_test = os.path.join(os.path.dirname(test_path), "test_images")
+        os.makedirs(destDir_test, exist_ok=True)
         for test_obj in X_test:
-            file_name = test_obj.get('file_name')
+            file_name = test_obj.get("file_name")
             source = os.path.join(image_locate, file_name)
-            destination = os.path.join(destDir, file_name)
+            destination = os.path.join(destDir_test, file_name)
             locate_images(source, destination)
-        
 
 
 if __name__ == "__main__":
     app()
+    # ann_path = "anns/oasis_new.json"
+    # save_path = "results"
+    # convert(ann_path, save_path)
