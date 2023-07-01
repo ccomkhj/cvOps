@@ -80,6 +80,12 @@ After converting, show the mask.
 python3 Mask.py show {mask_dir} 
 ```
 
+3. Convert AiHub Json format to COCO Json format
+- If you have AiHub json files, you can convert it to COCO json format.
+```bash
+python3 COCO.py convertjsonformat {json_aihub_dir} {json_coco_dir}
+```
+
 ## Install
 
 COCO relevant parts heavily relies on `COCO-Assistant`
