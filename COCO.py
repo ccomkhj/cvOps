@@ -225,6 +225,126 @@ def split(
             locate_images(source, destination)
 
 
+@app.command()
+def convertjsonformat(
+    json_aihub_dir: str = typer.Argument(..., help="directory of AI Hub json files"),
+    json_coco_dir: str = typer.Argument(..., help="directory to save converted COCO json files"),
+):
+    json_files = [file for file in os.listdir(json_aihub_dir) if file.endswith(".json")]
+    for aihub_file in json_files:
+        if os.path.isfile(os.path.join(json_aihub_dir, aihub_file)):
+            # Load the JSON file
+            with open(os.path.join(json_aihub_dir, aihub_file), "r") as file:
+                aihub = json.load(file)
+
+            coco = {
+                "info": {},
+                "licenses": [
+                    {
+                        "id": 0,
+                        "name": "",
+                        "url": ""
+                    }
+                ],
+                "categories": [],
+                "images": [],
+                "annotations": []
+            }
+
+            if "version" in aihub:
+                coco["info"]["version"] = aihub["version"]
+            if "flags" in aihub:
+                coco["info"]["flags"] = aihub["flags"]
+            if "growth_indicators" in aihub:
+                coco["info"]["growth_indicators"] = aihub["growth_indicators"]
+            if "file_attributes" in aihub:
+                coco["info"]["file_attributes"] = aihub["file_attributes"]
+
+            if "shapes" in aihub:
+                for shape in aihub["shapes"]:
+                    shape_label = shape["label"]
+
+                    # Check if the shape label is already present in categories
+                    category_id = None
+                    for category in coco["categories"]:
+                        if category["name"] == shape_label:
+                            category_id = category["id"]
+                            break
+                    
+                    # If the shape label is not present in categories, add it
+                    if category_id is None:
+                        category_id = len(coco["categories"])
+                        coco["categories"].append({
+                            "id": category_id,
+                            "name": shape_label,
+                            "supercategory": "none"
+                        })
+
+                    # Add annotation
+                    points = shape["points"]
+                    annotation = {
+                        "id": len(coco["annotations"]),
+                        "image_id": 0,
+                        "category_id": category_id,
+                        "bbox": [],
+                        "area": 0,
+                        "segmentation": [],
+                        "iscrowd": 0
+                    }
+                    if shape["shape_type"] == "rectangle":
+                        annotation["bbox"] = [points[0][0], \
+                                                points[0][1], \
+                                                points[1][0] - points[0][0], \
+                                                points[1][1] - points[0][1]]
+                        annotation["area"] = (points[1][0] - points[0][0]) * \
+                                             (points[1][1] - points[0][1])
+                    elif shape["shape_type"] == "polygon":
+                        minX = maxX = points[0][0]
+                        minY = maxY = points[0][1]
+                        for point in points:
+                            # For annotation > segmentation
+                            annotation["segmentation"].extend(point)
+
+                            # For annotation > bbox
+                            minX = min(minX, point[0])
+                            minY = min(minY, point[1])
+                            maxX = max(maxX, point[0])
+                            maxY = max(maxY, point[1])
+                        annotation["bbox"] = [minX, minY, maxX - minX, maxY - minY]
+
+                        area = 0.0
+                        for i in range(len(points)):
+                            x1, y1 = points[i]
+                            x2, y2 = points[(i + 1) % len(points)]
+                            area += (x1 * y2 - x2 * y1)
+                        annotation["area"] = abs(area) * 0.5
+                        
+                    coco["annotations"].append(annotation)    
+            
+            # Add Image data
+            image_data = {
+                "id": 0
+            }
+
+            if "imagePath" in aihub:
+                image_data["file_name"] = aihub["imagePath"]
+            if "imageHeight" in aihub:
+                image_data["height"] = aihub["imageHeight"]
+            if "imageWidth" in aihub:
+                image_data["width"] = aihub["imageWidth"]
+            if "imageData" in aihub:
+                image_data["data"] = aihub["imageData"]
+            if "file_attributes" in aihub:
+                image_data["date_captured"] = aihub["file_attributes"]["date"]
+            coco["images"].append(image_data)
+
+            # Save the Python object as JSON
+            with open(os.path.join(json_coco_dir, aihub_file), "w") as file:
+                json.dump(coco, file, indent=4)
+
+    print("Successfully converted AiHub json format to COCO json format")
+
+
 if __name__ == "__main__":
     app()
     # ann_path = "anns/oasis_new.json"
