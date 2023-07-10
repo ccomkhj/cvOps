@@ -5,6 +5,7 @@ from typing import Optional
 import funcy
 import numpy as np
 import typer
+from tqdm import tqdm
 from coco_assistant import COCO_Assistant
 from PIL import Image
 from pycocotools.coco import COCO
@@ -228,16 +229,12 @@ def split(
 @app.command()
 def convertjsonformat(
     json_aihub_dir: str = typer.Argument(..., help="directory of AI Hub json files"),
-    json_coco_dir: str = typer.Argument(..., help="directory to save converted COCO json files"),
+    json_coco_dir: str = typer.Argument(..., help="directory to save converted COCO json file"),
 ):
     json_files = [file for file in os.listdir(json_aihub_dir) if file.endswith(".json")]
-    for aihub_file in json_files:
-        if os.path.isfile(os.path.join(json_aihub_dir, aihub_file)):
-            # Load the JSON file
-            with open(os.path.join(json_aihub_dir, aihub_file), "r") as file:
-                aihub = json.load(file)
+    json_files.sort()
 
-            coco = {
+    coco = {
                 "info": {},
                 "licenses": [
                     {
@@ -251,14 +248,38 @@ def convertjsonformat(
                 "annotations": []
             }
 
+    for aihub_file in tqdm(json_files, desc='Processing', unit='item'):
+        if os.path.isfile(os.path.join(json_aihub_dir, aihub_file)):
+            # Load the JSON file
+            with open(os.path.join(json_aihub_dir, aihub_file), "r") as file:
+                aihub = json.load(file)
+
+            # Add Info
             if "version" in aihub:
                 coco["info"]["version"] = aihub["version"]
             if "flags" in aihub:
                 coco["info"]["flags"] = aihub["flags"]
-            if "growth_indicators" in aihub:
-                coco["info"]["growth_indicators"] = aihub["growth_indicators"]
+
+            # Add Image data
+            image_data = {
+                "id": len(coco["images"]),
+                "license": 0
+            }
+            if "imagePath" in aihub:
+                image_data["file_name"] = aihub["imagePath"]
+            if "imageHeight" in aihub:
+                image_data["height"] = aihub["imageHeight"]
+            if "imageWidth" in aihub:
+                image_data["width"] = aihub["imageWidth"]
+            if "imageData" in aihub:
+                image_data["data"] = aihub["imageData"]
             if "file_attributes" in aihub:
-                coco["info"]["file_attributes"] = aihub["file_attributes"]
+                image_data["date_captured"] = aihub["file_attributes"]["date"]
+            if "growth_indicators" in aihub:
+                image_data["growth_indicators"] = aihub["growth_indicators"]
+            if "file_attributes" in aihub:
+                image_data["file_attributes"] = aihub["file_attributes"]
+            coco["images"].append(image_data)
 
             if "shapes" in aihub:
                 for shape in aihub["shapes"]:
@@ -277,14 +298,14 @@ def convertjsonformat(
                         coco["categories"].append({
                             "id": category_id,
                             "name": shape_label,
-                            "supercategory": "none"
+                            "supercategory": shape["group_id"]
                         })
 
                     # Add annotation
                     points = shape["points"]
                     annotation = {
                         "id": len(coco["annotations"]),
-                        "image_id": 0,
+                        "image_id": image_data["id"],
                         "category_id": category_id,
                         "bbox": [],
                         "area": 0,
@@ -298,12 +319,19 @@ def convertjsonformat(
                                                 points[1][1] - points[0][1]]
                         annotation["area"] = (points[1][0] - points[0][0]) * \
                                              (points[1][1] - points[0][1])
+                        annotation["segmentation"].append([
+                            points[0][0], points[0][1],
+                            points[1][0], points[0][1],
+                            points[1][0], points[1][1],
+                            points[0][0], points[1][1]
+                        ])
                     elif shape["shape_type"] == "polygon":
                         minX = maxX = points[0][0]
                         minY = maxY = points[0][1]
+                        segment = []
                         for point in points:
                             # For annotation > segmentation
-                            annotation["segmentation"].extend(point)
+                            segment.extend(point)
 
                             # For annotation > bbox
                             minX = min(minX, point[0])
@@ -311,6 +339,7 @@ def convertjsonformat(
                             maxX = max(maxX, point[0])
                             maxY = max(maxY, point[1])
                         annotation["bbox"] = [minX, minY, maxX - minX, maxY - minY]
+                        annotation["segmentation"].append(segment)
 
                         area = 0.0
                         for i in range(len(points)):
@@ -320,27 +349,12 @@ def convertjsonformat(
                         annotation["area"] = abs(area) * 0.5
                         
                     coco["annotations"].append(annotation)    
-            
-            # Add Image data
-            image_data = {
-                "id": 0
-            }
+        else:
+            print(f"{os.path.join(json_aihub_dir, aihub_file)} does not exist.")
 
-            if "imagePath" in aihub:
-                image_data["file_name"] = aihub["imagePath"]
-            if "imageHeight" in aihub:
-                image_data["height"] = aihub["imageHeight"]
-            if "imageWidth" in aihub:
-                image_data["width"] = aihub["imageWidth"]
-            if "imageData" in aihub:
-                image_data["data"] = aihub["imageData"]
-            if "file_attributes" in aihub:
-                image_data["date_captured"] = aihub["file_attributes"]["date"]
-            coco["images"].append(image_data)
-
-            # Save the Python object as JSON
-            with open(os.path.join(json_coco_dir, aihub_file), "w") as file:
-                json.dump(coco, file, indent=4)
+    # Save the Python object as JSON
+    with open(os.path.join(json_coco_dir, f"{os.path.basename(json_aihub_dir)}.json"), "w") as file:
+        json.dump(coco, file, indent=4)
 
     print("Successfully converted AiHub json format to COCO json format")
 
