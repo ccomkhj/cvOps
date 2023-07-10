@@ -359,6 +359,26 @@ def convertjsonformat(
     print("Successfully converted AiHub json format to COCO json format")
 
 
+@app.command()
+def replaceimgformat(
+    annotation: str = typer.Argument(..., help="COCO json annotation file"),
+    format: str = typer.Argument(..., help="Desired img format you want to replace")
+):
+    if os.path.isfile(annotation):
+        with open(annotation, "r") as file:
+            ann = json.load(file)
+        
+        # Replace the image extension to desired format
+        for ann_img in ann["images"]:
+            ann_img["file_name"] = ann_img["file_name"].split(".")[0] + "." + format
+
+         # Save the Python object as JSON
+        with open(annotation, "w") as file:
+            json.dump(ann, file, indent=4)
+    
+    else:
+        print(f"{annotation} does not exist.")
+
 if __name__ == "__main__":
     app()
     # ann_path = "anns/oasis_new.json"

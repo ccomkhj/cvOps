@@ -88,6 +88,13 @@ python3 Mask.py show {mask_dir}
 python3 COCO.py convertjsonformat {json_aihub_dir} {json_coco_dir}
 ```
 
+2. Replace the image extension
+- If you have converted your image format, you should change the extension in the annotation file too. You can simply replace it using this function.
+```bash
+python3 COCO.py replaceimgformat {ann_file_path} {desired_extension}
+# i.e. python3 COCO.py replaceimgformat ann.json jpg
+```
+
 ## Install
 
 COCO relevant parts heavily relies on `COCO-Assistant`
