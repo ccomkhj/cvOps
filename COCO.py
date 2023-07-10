@@ -5,6 +5,7 @@ from typing import Optional
 import funcy
 import numpy as np
 import typer
+import yaml
 from tqdm import tqdm
 from coco_assistant import COCO_Assistant
 from PIL import Image
@@ -224,6 +225,54 @@ def split(
             source = os.path.join(image_locate, file_name)
             destination = os.path.join(destDir_test, file_name)
             locate_images(source, destination)
+
+
+@app.command()
+def delete(
+    config: str = typer.Argument(..., help="Path to category manage config file"),
+    ann_path: str = typer.Argument(..., help="Path to COCO annotations file")
+):
+    '''
+    This code referes to COCO-Assistant > remove_cat.
+    '''
+
+    with open(config, 'r') as file:
+        config_catman = yaml.safe_load(file)
+    
+    # list of cagetories to be removed
+    rcats = config_catman['delete']
+
+    coco = COCO(ann_path)
+
+    # Gives you a list of category ids of the categories to be removed
+    catids_remove = coco.getCatIds(catNms=rcats)
+
+    if len(catids_remove) == 0:
+        print('Nothing to be removed.')
+        return
+
+    # Gives you a list of ids of annotations that contain those categories
+    annids_remove = coco.getAnnIds(catIds=catids_remove)
+
+    # Get keep category ids
+    catids_keep = list(set(coco.getCatIds()) - set(catids_remove))
+    # Get keep annotation ids
+    annids_keep = list(set(coco.getAnnIds()) - set(annids_remove))
+
+    with open(ann_path) as it:
+        ann = json.load(it)
+
+    del ann["categories"]
+    ann["categories"] = coco.loadCats(catids_keep)
+    del ann["annotations"]
+    ann["annotations"] = coco.loadAnns(annids_keep)
+
+    directory = os.path.dirname(ann_path)
+    filename = os.path.splitext(os.path.basename(ann_path))[0]
+    with open(os.path.join(directory, filename + '_delete.json'), "w") as oa:
+        json.dump(ann, oa, indent=4)
+
+    print('Successfully deleted the desired categories.')
 
 
 @app.command()
