@@ -69,14 +69,22 @@ python3 COCO.py delete {config_file} {annotation_path}
 # i.e. python3 COCO.py delete config/category_manage.yaml ann.json
 ```
 
-2-4. Convert Mask (pallete to binary mask)
-First, configure config file at `config/mask.yaml`
+2-4. Process category & annotation
+- Convert category name and merge duplicated categories
+
+```bash
+python3 COCO.py process {config_file} {annotation_path}
+# i.e. python3 COCO.py process config/category_manage.yaml ann.json
+```
+
+2-5. Convert Mask (pallete to binary mask)
+- First, configure config file at `config/mask.yaml`
 
 ```bash
 python3 Mask.py convert {anns_dir} {mask_dir to save} 
 ```
 
-2-5. Convert Mask (COCO to binary mask)
+2-6. Convert Mask (COCO to binary mask)
 ```bash
 python3 Mask.py convert {anns_dir} {mask_dir to save} 
 ```

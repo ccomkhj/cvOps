@@ -276,6 +276,55 @@ def delete(
 
 
 @app.command()
+def process(
+    config: str = typer.Argument(..., help="Path to category manage config file"),
+    ann_path: str = typer.Argument(..., help="Path to COCO annotations file")
+):
+    with open(config, 'r') as file:
+        config_catman = yaml.safe_load(file)
+    
+    # list of cagetories to be processed
+    pcat = config_catman['process']
+
+    with open(ann_path, 'r') as file:
+        ann = json.load(file)
+    
+    unique_categories = {}
+    convert_category_id = {}
+
+    for category in ann['categories']:
+        if category["name"] in pcat:
+            category["name"] = pcat[category["name"]]
+
+            # Check if category name already exists in the dictionary
+            if category["name"] in unique_categories:
+                # Category name already exists, update relevant attribute
+                existing_category = unique_categories[category["name"]]
+                existing_category_id = existing_category['id']
+
+                convert_category_id[category["id"]] = existing_category_id
+            else:
+                # Category name is unique, add it to the dictionary
+                cat_id = len(unique_categories)
+                convert_category_id[category["id"]] = cat_id
+                category["id"] = cat_id
+                unique_categories[category["name"]] = category
+
+    # Replace the categories in the Coco data
+    ann['categories'] = list(unique_categories.values())
+
+    for annotation in ann["annotations"]:
+        annotation["category_id"] = convert_category_id[annotation["category_id"]]
+
+    directory = os.path.dirname(ann_path)
+    filename = os.path.splitext(os.path.basename(ann_path))[0]
+    with open(os.path.join(directory, filename + '_process.json'), "w") as oa:
+        json.dump(ann, oa, indent=4)
+
+    print('Successfully processed the categories and annotations.')
+
+
+@app.command()
 def convertjsonformat(
     json_aihub_dir: str = typer.Argument(..., help="directory of AI Hub json files"),
     json_coco_dir: str = typer.Argument(..., help="directory to save converted COCO json file"),
