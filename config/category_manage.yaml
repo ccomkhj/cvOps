@@ -1,0 +1,19 @@
+delete:
+  - tom_growth_bb
+  - tom_flower_stem_bb
+  - tom_stem_dimeter_bb
+  - tom_stem_dimeter_tilt_bb
+  - tom_leaf_bb
+  - tom_flower_count_bb
+  - tom_fruit_count_bb
+  - tom_pre_flowering_poly
+  - tom_flower_center_bb
+  - tom_flower_tip_bb
+
+process:
+  tom_flower_poly: flower
+  tom_flower_half_poly: flower
+  tom_post_flowering_poly: flower
+  tom_fruit_breaker_poly: unripened
+  tom_fruit_pink_poly: half-ripened
+  tom_fruit_red_poly: fully-ripened
