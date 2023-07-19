@@ -61,14 +61,30 @@ If your source doesn't include license, include the blank license.
     ...
 ```
 
-2-3. Convert Mask (pallete to binary mask)
-First, configure config file at `config/mask.yaml`
+2-3. Delete irrelevant categories
+- First, configure config file at `config/category_manage.yaml`
+
+``` bash
+python3 COCO.py delete {config_file} {annotation_path}
+# i.e. python3 COCO.py delete config/category_manage.yaml ann.json
+```
+
+2-4. Process category & annotation
+- Convert category name and merge duplicated categories
+
+```bash
+python3 COCO.py process {config_file} {annotation_path}
+# i.e. python3 COCO.py process config/category_manage.yaml ann.json
+```
+
+2-5. Convert Mask (pallete to binary mask)
+- First, configure config file at `config/mask.yaml`
 
 ```bash
 python3 Mask.py convert {anns_dir} {mask_dir to save} 
 ```
 
-2-4. Convert Mask (COCO to binary mask)
+2-6. Convert Mask (COCO to binary mask)
 ```bash
 python3 Mask.py convert {anns_dir} {mask_dir to save} 
 ```
@@ -86,6 +102,13 @@ python3 Mask.py show {mask_dir}
 - If you have AiHub json files, you can convert it to COCO json format.
 ```bash
 python3 COCO.py convertjsonformat {json_aihub_dir} {json_coco_dir}
+```
+
+2. Replace the image extension
+- If you have converted your image format, you should change the extension in the annotation file too. You can simply replace it using this function.
+```bash
+python3 COCO.py replaceimgformat {ann_file_path} {desired_extension}
+# i.e. python3 COCO.py replaceimgformat ann.json jpg
 ```
 
 ## Install

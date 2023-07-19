@@ -5,6 +5,8 @@ from typing import Optional
 import funcy
 import numpy as np
 import typer
+import yaml
+from tqdm import tqdm
 from coco_assistant import COCO_Assistant
 from PIL import Image
 from pycocotools.coco import COCO
@@ -226,18 +228,111 @@ def split(
 
 
 @app.command()
+def delete(
+    config: str = typer.Argument(..., help="Path to category manage config file"),
+    ann_path: str = typer.Argument(..., help="Path to COCO annotations file")
+):
+    '''
+    This code referes to COCO-Assistant > remove_cat.
+    '''
+
+    with open(config, 'r') as file:
+        config_catman = yaml.safe_load(file)
+    
+    # list of cagetories to be removed
+    rcats = config_catman['delete']
+
+    coco = COCO(ann_path)
+
+    # Gives you a list of category ids of the categories to be removed
+    catids_remove = coco.getCatIds(catNms=rcats)
+
+    if len(catids_remove) == 0:
+        print('Nothing to be removed.')
+        return
+
+    # Gives you a list of ids of annotations that contain those categories
+    annids_remove = coco.getAnnIds(catIds=catids_remove)
+
+    # Get keep category ids
+    catids_keep = list(set(coco.getCatIds()) - set(catids_remove))
+    # Get keep annotation ids
+    annids_keep = list(set(coco.getAnnIds()) - set(annids_remove))
+
+    with open(ann_path) as it:
+        ann = json.load(it)
+
+    del ann["categories"]
+    ann["categories"] = coco.loadCats(catids_keep)
+    del ann["annotations"]
+    ann["annotations"] = coco.loadAnns(annids_keep)
+
+    directory = os.path.dirname(ann_path)
+    filename = os.path.splitext(os.path.basename(ann_path))[0]
+    with open(os.path.join(directory, filename + '_delete.json'), "w") as oa:
+        json.dump(ann, oa, indent=4)
+
+    print('Successfully deleted the desired categories.')
+
+
+@app.command()
+def process(
+    config: str = typer.Argument(..., help="Path to category manage config file"),
+    ann_path: str = typer.Argument(..., help="Path to COCO annotations file")
+):
+    with open(config, 'r') as file:
+        config_catman = yaml.safe_load(file)
+    
+    # list of cagetories to be processed
+    pcat = config_catman['process']
+
+    with open(ann_path, 'r') as file:
+        ann = json.load(file)
+    
+    unique_categories = {}
+    convert_category_id = {}
+
+    for category in ann['categories']:
+        if category["name"] in pcat:
+            category["name"] = pcat[category["name"]]
+
+            # Check if category name already exists in the dictionary
+            if category["name"] in unique_categories:
+                # Category name already exists, update relevant attribute
+                existing_category = unique_categories[category["name"]]
+                existing_category_id = existing_category['id']
+
+                convert_category_id[category["id"]] = existing_category_id
+            else:
+                # Category name is unique, add it to the dictionary
+                cat_id = len(unique_categories)
+                convert_category_id[category["id"]] = cat_id
+                category["id"] = cat_id
+                unique_categories[category["name"]] = category
+
+    # Replace the categories in the Coco data
+    ann['categories'] = list(unique_categories.values())
+
+    for annotation in ann["annotations"]:
+        annotation["category_id"] = convert_category_id[annotation["category_id"]]
+
+    directory = os.path.dirname(ann_path)
+    filename = os.path.splitext(os.path.basename(ann_path))[0]
+    with open(os.path.join(directory, filename + '_process.json'), "w") as oa:
+        json.dump(ann, oa, indent=4)
+
+    print('Successfully processed the categories and annotations.')
+
+
+@app.command()
 def convertjsonformat(
     json_aihub_dir: str = typer.Argument(..., help="directory of AI Hub json files"),
-    json_coco_dir: str = typer.Argument(..., help="directory to save converted COCO json files"),
+    json_coco_dir: str = typer.Argument(..., help="directory to save converted COCO json file"),
 ):
     json_files = [file for file in os.listdir(json_aihub_dir) if file.endswith(".json")]
-    for aihub_file in json_files:
-        if os.path.isfile(os.path.join(json_aihub_dir, aihub_file)):
-            # Load the JSON file
-            with open(os.path.join(json_aihub_dir, aihub_file), "r") as file:
-                aihub = json.load(file)
+    json_files.sort()
 
-            coco = {
+    coco = {
                 "info": {},
                 "licenses": [
                     {
@@ -251,14 +346,38 @@ def convertjsonformat(
                 "annotations": []
             }
 
+    for aihub_file in tqdm(json_files, desc='Processing', unit='item'):
+        if os.path.isfile(os.path.join(json_aihub_dir, aihub_file)):
+            # Load the JSON file
+            with open(os.path.join(json_aihub_dir, aihub_file), "r") as file:
+                aihub = json.load(file)
+
+            # Add Info
             if "version" in aihub:
                 coco["info"]["version"] = aihub["version"]
             if "flags" in aihub:
                 coco["info"]["flags"] = aihub["flags"]
-            if "growth_indicators" in aihub:
-                coco["info"]["growth_indicators"] = aihub["growth_indicators"]
+
+            # Add Image data
+            image_data = {
+                "id": len(coco["images"]),
+                "license": 0
+            }
+            if "imagePath" in aihub:
+                image_data["file_name"] = aihub["imagePath"]
+            if "imageHeight" in aihub:
+                image_data["height"] = aihub["imageHeight"]
+            if "imageWidth" in aihub:
+                image_data["width"] = aihub["imageWidth"]
+            if "imageData" in aihub:
+                image_data["data"] = aihub["imageData"]
             if "file_attributes" in aihub:
-                coco["info"]["file_attributes"] = aihub["file_attributes"]
+                image_data["date_captured"] = aihub["file_attributes"]["date"]
+            if "growth_indicators" in aihub:
+                image_data["growth_indicators"] = aihub["growth_indicators"]
+            if "file_attributes" in aihub:
+                image_data["file_attributes"] = aihub["file_attributes"]
+            coco["images"].append(image_data)
 
             if "shapes" in aihub:
                 for shape in aihub["shapes"]:
@@ -277,14 +396,14 @@ def convertjsonformat(
                         coco["categories"].append({
                             "id": category_id,
                             "name": shape_label,
-                            "supercategory": "none"
+                            "supercategory": shape["group_id"]
                         })
 
                     # Add annotation
                     points = shape["points"]
                     annotation = {
                         "id": len(coco["annotations"]),
-                        "image_id": 0,
+                        "image_id": image_data["id"],
                         "category_id": category_id,
                         "bbox": [],
                         "area": 0,
@@ -298,12 +417,19 @@ def convertjsonformat(
                                                 points[1][1] - points[0][1]]
                         annotation["area"] = (points[1][0] - points[0][0]) * \
                                              (points[1][1] - points[0][1])
+                        annotation["segmentation"].append([
+                            points[0][0], points[0][1],
+                            points[1][0], points[0][1],
+                            points[1][0], points[1][1],
+                            points[0][0], points[1][1]
+                        ])
                     elif shape["shape_type"] == "polygon":
                         minX = maxX = points[0][0]
                         minY = maxY = points[0][1]
+                        segment = []
                         for point in points:
                             # For annotation > segmentation
-                            annotation["segmentation"].extend(point)
+                            segment.extend(point)
 
                             # For annotation > bbox
                             minX = min(minX, point[0])
@@ -311,6 +437,7 @@ def convertjsonformat(
                             maxX = max(maxX, point[0])
                             maxY = max(maxY, point[1])
                         annotation["bbox"] = [minX, minY, maxX - minX, maxY - minY]
+                        annotation["segmentation"].append(segment)
 
                         area = 0.0
                         for i in range(len(points)):
@@ -320,30 +447,35 @@ def convertjsonformat(
                         annotation["area"] = abs(area) * 0.5
                         
                     coco["annotations"].append(annotation)    
-            
-            # Add Image data
-            image_data = {
-                "id": 0
-            }
+        else:
+            print(f"{os.path.join(json_aihub_dir, aihub_file)} does not exist.")
 
-            if "imagePath" in aihub:
-                image_data["file_name"] = aihub["imagePath"]
-            if "imageHeight" in aihub:
-                image_data["height"] = aihub["imageHeight"]
-            if "imageWidth" in aihub:
-                image_data["width"] = aihub["imageWidth"]
-            if "imageData" in aihub:
-                image_data["data"] = aihub["imageData"]
-            if "file_attributes" in aihub:
-                image_data["date_captured"] = aihub["file_attributes"]["date"]
-            coco["images"].append(image_data)
-
-            # Save the Python object as JSON
-            with open(os.path.join(json_coco_dir, aihub_file), "w") as file:
-                json.dump(coco, file, indent=4)
+    # Save the Python object as JSON
+    with open(os.path.join(json_coco_dir, f"{os.path.basename(json_aihub_dir)}.json"), "w") as file:
+        json.dump(coco, file, indent=4)
 
     print("Successfully converted AiHub json format to COCO json format")
 
+
+@app.command()
+def replaceimgformat(
+    annotation: str = typer.Argument(..., help="COCO json annotation file"),
+    format: str = typer.Argument(..., help="Desired img format you want to replace")
+):
+    if os.path.isfile(annotation):
+        with open(annotation, "r") as file:
+            ann = json.load(file)
+        
+        # Replace the image extension to desired format
+        for ann_img in ann["images"]:
+            ann_img["file_name"] = ann_img["file_name"].split(".")[0] + "." + format
+
+         # Save the Python object as JSON
+        with open(annotation, "w") as file:
+            json.dump(ann, file, indent=4)
+    
+    else:
+        print(f"{annotation} does not exist.")
 
 if __name__ == "__main__":
     app()
