@@ -382,6 +382,11 @@ def convertjsonformat(
                 "images": [],
                 "annotations": []
             }
+    
+    conv_path = 'config/coco_conversion.yaml'
+    
+    with open(conv_path, 'r') as file:
+        config_coco_conv = yaml.safe_load(file)
 
     for aihub_file in tqdm(json_files, desc='Processing', unit='item'):
         if os.path.isfile(os.path.join(json_aihub_dir, aihub_file)):
@@ -389,17 +394,34 @@ def convertjsonformat(
             with open(os.path.join(json_aihub_dir, aihub_file), "r") as file:
                 aihub = json.load(file)
 
+            # Add Image data
+            image_data = {
+                "id": len(coco["images"]),
+                "license": 0
+            }
+            
+            for key, val in config_coco_conv.items():
+                for coco_key, aihub_key in val.items():
+                    
+                    added = aihub.get(aihub_key)
+                    
+                    if added is None:
+                        print(f"The key: {aihub_key} is None in {conv_path}")
+                        break
+                    else:
+                        pass
+                    
+                    match key:
+                        case "images":
+                            image_data[coco_key] = added
+                            
+                        #TODO: keep adding
             # Add Info
             if "version" in aihub:
                 coco["info"]["version"] = aihub["version"]
             if "flags" in aihub:
                 coco["info"]["flags"] = aihub["flags"]
 
-            # Add Image data
-            image_data = {
-                "id": len(coco["images"]),
-                "license": 0
-            }
             if "imagePath" in aihub:
                 image_data["file_name"] = aihub["imagePath"]
             if "imageHeight" in aihub:
@@ -426,7 +448,7 @@ def convertjsonformat(
                         if category["name"] == shape_label:
                             category_id = category["id"]
                             break
-                    
+
                     # If the shape label is not present in categories, add it
                     if category_id is None:
                         category_id = len(coco["categories"])
@@ -482,8 +504,8 @@ def convertjsonformat(
                             x2, y2 = points[(i + 1) % len(points)]
                             area += (x1 * y2 - x2 * y1)
                         annotation["area"] = abs(area) * 0.5
-                        
-                    coco["annotations"].append(annotation)    
+
+                    coco["annotations"].append(annotation)
         else:
             print(f"{os.path.join(json_aihub_dir, aihub_file)} does not exist.")
 
