@@ -28,12 +28,26 @@ python3 COCO.py visualize {images_dir} {anns_dir}
 ```
 :warning: It doesn't work if you link to external disk.
 
-1-2. Mask samples :mask:
+1-2. COCO samples with only bounding box (no segmentation)
+```bash
+Example:
+    .
+    ├── images_dir
+    │   ├── image1
+    │   ├── image2
+    |   ├── image3
+    |
+    ├── ann_path
+
+python3 COCO.py visualizebox {images_dir} {anns_path}
+```
+
+1-3. Mask samples :mask:
 ```bash
 python3 Mask.py visualize {images_dir} {anns_dir}
 ```
 
-2. Process annotations
+1. Process annotations
 
 2-1. Merge COCO sample
 

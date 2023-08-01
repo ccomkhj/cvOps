@@ -31,7 +31,8 @@ def palette2mask(ann: str, conv: Dict[int, List]) -> np.ndarray:
     Returns:
         np.ndarray: 1C mask
     """
-    palette = np.array(Image.open(ann))[..., :3]  # get rid of transparency
+    img = Image.open(ann).convert('RGB')
+    palette = np.array(img)[..., :3]  # get rid of transparency
 
     drawing = np.zeros(palette.shape[:2])
     for key, value in conv.items():

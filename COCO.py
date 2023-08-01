@@ -15,6 +15,9 @@ from skmultilearn.model_selection import iterative_train_test_split
 
 from tools.helpers import filter_annotations, filter_images, locate_images, save_coco
 
+import tkinter as tk
+from tools.cocoviewer import Data, StatusBar, SlidersBar, ObjectsPanel, Menu, ImagePanel, Controller
+
 app = typer.Typer(help="Awesome cvOps Tool.", rich_markup_mode="rich")
 
 
@@ -44,6 +47,40 @@ def visualize(
     # Create COCO_Assistant object
     cas = COCO_Assistant(img_dir, ann_dir)
     cas.visualise()
+
+@app.command()
+def visualizebox(
+    img_dir: str = typer.Argument(..., help="directory of images"),
+    ann_path: str = typer.Argument(..., help="json file of annotations"),
+):
+    """
+    [bold green]Visualize coco sample with only bounding box[/bold green]
+
+    [blue]
+    Example:
+    .
+    ├── images_dir
+    │   ├── image1
+    │   ├── image2
+    |   ├── image3
+    |
+    ├── ann_path
+    [/blue]
+    """
+
+    # Create COCO_Assistant object
+
+    root = tk.Tk()
+    root.title("COCO Viewer")
+
+    data = Data(img_dir, ann_path)
+    statusbar = StatusBar(root)
+    sliders = SlidersBar(root)
+    objects_panel = ObjectsPanel(root)
+    menu = Menu(root)
+    image_panel = ImagePanel(root)
+    Controller(data, root, image_panel, statusbar, menu, objects_panel, sliders)
+    root.mainloop()
 
 
 @app.command()
