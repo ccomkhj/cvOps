@@ -521,6 +521,20 @@ def replaceimgformat(
     annotation: str = typer.Argument(..., help="COCO json annotation file"),
     format: str = typer.Argument(..., help="Desired img format you want to replace")
 ):
+    """
+    This function opens a provided COCO JSON annotation file, changes the format of the image filenames 
+    included in the 'images' key of the JSON. The new format is based on the format argument provided
+    by the user. Once changes are made, it saves the Python object back as a JSON file. 
+
+    If the annotation file does not exist at the specified path, a printed message will indicate so. 
+
+    Parameters:
+    annotation (str): The path to a .json file containing COCO format annotations. 
+    format (str): The desired image format to replace the current image format in the annotation file. 
+
+    Returns:
+    None. The function operates in-place on the provided JSON file. 
+    """
     if os.path.isfile(annotation):
         with open(annotation, "r") as file:
             ann = json.load(file)
@@ -535,6 +549,7 @@ def replaceimgformat(
     
     else:
         print(f"{annotation} does not exist.")
+
 
 if __name__ == "__main__":
     app()

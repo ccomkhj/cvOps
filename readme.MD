@@ -110,6 +110,11 @@ After converting, show the mask.
 python3 Mask.py show {mask_dir} 
 ```
 
+When a annotation tool has random color of mask, use code below to check the color code.
+```bash
+python3 Mask.py checkcolor {mask_dir} 
+```
+
 ## Additional Function
 
 1. Convert AiHub Json format to COCO Json format

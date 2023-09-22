@@ -21,22 +21,32 @@ def load(path: str) -> List[str]:
     return anns
 
 
-def palette2mask(ann: str, conv: Dict[int, List]) -> np.ndarray:
-    """convert 3channel array to 1 channel array using conv
+def palette2mask(ann: str, conv: Dict[int, List[int]]) -> np.ndarray:
+    """
+    Convert 3channel array to 1 channel array using conv
 
     Args:
         ann (str): annotation file path
-        conv (Dict[int, List]): {mask_value}: [R, G, B]
+        conv (Dict[int, List[int]]): dictionary with mask_value as keys and lists of RGB values as values
 
     Returns:
-        np.ndarray: 1C mask
+        np.ndarray: 1-channel mask
     """
-    img = Image.open(ann).convert('RGB')
-    palette = np.array(img)[..., :3]  # get rid of transparency
 
-    drawing = np.zeros(palette.shape[:2])
+    # Check if file exists
+    try:
+        img = Image.open(ann)
+    except FileNotFoundError:
+        print(f"No file found at {ann}")
+        return np.array([])
+
+    img = img.convert('RGB')
+    palette = np.array(img)
+
+    drawing = np.zeros(palette.shape[:2], dtype=int)
+
     for key, value in conv.items():
-        region = np.all(palette == value, axis=-1)
+        region = np.all(palette == np.array(value), axis=-1)
         drawing[region] = key
 
     return drawing
