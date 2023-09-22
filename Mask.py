@@ -64,7 +64,7 @@ def convert(
         print(f"Annotation of {name} is processed.")
 
         name = name.split(".")[0]  # get rid of jpg format
-        Image.fromarray(mask).convert("P").save(os.path.join(save_dir, name + ".png"))
+        Image.fromarray(mask.astype(np.uint8)).convert("P").save(os.path.join(save_dir, name + ".png"))
 
     print(f"Conversion is successfully done.")
 
