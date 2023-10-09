@@ -75,7 +75,31 @@ If your source doesn't include license, include the blank license.
     ...
 ```
 
-2-3. Delete irrelevant categories
+2-3. Update COCO sample
+
+When updating computer vision projects, existing train and validation samples needs to be updated.
+Create Output Directories: The function creates a timestamped directory under the "results" folder to store the updated dataset and split datasets. It creates subdirectories for annotations (train and validation) and images (train and validation).
+
+Split New Annotations: It splits the new annotations (specified by new_ann_path) into train and validation sets based on the split_ratio and optionally reorganizes images using the image_locate directory. The result is saved as "new_train_images.json" and "new_val_images.json" in the output directories.
+
+Locate Existing Images: The function locates existing images specified by train_img_path and val_img_path based on the split and saves them in the corresponding output directories. Note that the image files must be provided in the appropriate directory structure.
+
+Merge Annotations: Finally, it merges the located images with their corresponding annotations for both the train and validation sets.
+
+Example Usage:
+```bash
+python your_script.py update \
+    --new_ann_path /path/to/new_annotations.json \
+    --train_ann_path /path/to/train_annotations.json \
+    --val_ann_path /path/to/val_annotations.json \
+    --train_img_path /path/to/train_images/ \
+    --val_img_path /path/to/val_images/ \
+    --split_ratio 0.8 \
+    --image_locate /path/to/images/
+```
+This command will update and split the datasets as specified and store the results in timestamped directories under "results".
+
+2-4. Delete irrelevant categories
 - First, configure config file at `config/category_manage.yaml`
 
 ``` bash
@@ -83,7 +107,7 @@ python3 COCO.py delete {config_file} {annotation_path}
 # i.e. python3 COCO.py delete config/category_manage.yaml ann.json
 ```
 
-2-4. Process category & annotation
+2-5. Process category & annotation
 - Convert category name and merge duplicated categories
 
 ```bash
@@ -91,14 +115,14 @@ python3 COCO.py process {config_file} {annotation_path}
 # i.e. python3 COCO.py process config/category_manage.yaml ann.json
 ```
 
-2-5. Convert Mask (pallete to binary mask)
+2-6. Convert Mask (pallete to binary mask)
 - First, configure config file at `config/mask.yaml`
 
 ```bash
 python3 Mask.py convert {anns_dir} {mask_dir to save} 
 ```
 
-2-6. Convert Mask (COCO to binary mask)
+2-7. Convert Mask (COCO to binary mask)
 ```bash
 python3 Mask.py convert {anns_dir} {mask_dir to save} 
 ```

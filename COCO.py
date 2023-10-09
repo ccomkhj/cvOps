@@ -5,6 +5,7 @@ from typing import Optional
 import funcy
 import numpy as np
 import typer
+import time
 import yaml
 from tqdm import tqdm
 from coco_assistant import COCO_Assistant
@@ -150,6 +151,8 @@ def convert(
         print(f"Successfully generated mask file: {imgFileName}")
 
 
+
+
 @app.command()
 def split(
     ann_path: str = typer.Argument(..., help="Path to COCO annotations file."),
@@ -245,7 +248,9 @@ def split(
         # if the path is given,
 
         # Create folder of images next to train and test file
-        destDir_train = os.path.join(os.path.dirname(train_path), "train_images")
+        parent_dir = os.path.dirname(train_path)
+        grand_parent = os.path.dirname(os.path.dirname(parent_dir))
+        destDir_train = os.path.join(grand_parent, "images", "train", "new_train_images")
         os.makedirs(destDir_train, exist_ok=True)
 
         # Iterate the dictionary and send it to source and destination.
@@ -255,13 +260,69 @@ def split(
             destination = os.path.join(destDir_train, file_name)
             locate_images(source, destination)
 
-        destDir_test = os.path.join(os.path.dirname(test_path), "test_images")
+        # if the path is given,
+        destDir_test = os.path.join(
+            grand_parent, "images", "val", "new_val_images")
         os.makedirs(destDir_test, exist_ok=True)
+        
         for test_obj in X_test:
             file_name = test_obj.get("file_name")
             source = os.path.join(image_locate, file_name)
             destination = os.path.join(destDir_test, file_name)
             locate_images(source, destination)
+
+
+@app.command()
+def update(
+    new_ann_path: str = typer.Argument(..., help="Path to new COCO annotations file."),
+    train_ann_path: str = typer.Argument(..., help="Path to existing train COCO annotations file."),
+    val_ann_path: str = typer.Argument(...,
+                                       help="Path to existing val COCO annotations file."),
+    train_img_path: str = typer.Argument(...,
+                                         help="Path to existing train img file."),
+    val_img_path: str = typer.Argument(...,
+                                       help="Path to existing val img file."),
+    split_ratio: float = typer.Argument(
+        default=0.8, help="A ratio of a split; a number in (0, 1)"
+    ),
+    image_locate: Optional[str] = typer.Argument(
+        default="", help="Locate images based on the split if the value is given."
+    ),
+):
+    now = int(time.time())
+    outcome_path = f"results/{now}"
+    outcome_train_ann = os.path.join(outcome_path, "ann", "train")
+    outcome_val_ann = os.path.join(outcome_path, "ann", "val")
+    
+    outcome_train_img = os.path.join(outcome_path, "images", "train")
+    outcome_val_img = os.path.join(outcome_path, "images", "val")
+    os.makedirs(outcome_train_ann, exist_ok=True)
+    os.makedirs(outcome_val_ann, exist_ok=True)
+    os.makedirs(outcome_train_img, exist_ok=True)
+    os.makedirs(outcome_val_img, exist_ok=True)
+    
+    split(new_ann_path, os.path.join(outcome_train_ann, "new_train_images.json"),
+          os.path.join(outcome_val_ann, "new_val_images.json"), split_ratio, image_locate, multi=False)
+    
+    print("Splitted at ", outcome_path)
+    
+    # Create COCO_Assistant object
+    
+    locate_images(train_ann_path, os.path.join(
+        outcome_train_ann, "existing_train.json"))
+    locate_images(val_ann_path, os.path.join(outcome_val_ann, "existing_val.json"))
+    
+    ## TODO: IT needs to be double checked when images are available !! ##
+    for train_img in train_img_path:
+        locate_images(train_img, os.path.join(
+            outcome_train_img, "existing_train", os.path.basename(train_img) ))
+    for val_img in val_img_path:
+        locate_images(val_img, os.path.join(
+            outcome_val_img, "existing_val", os.path.basename(val_img) ))
+    
+    merge(outcome_train_img, outcome_train_ann)
+    merge(outcome_val_img,
+          outcome_val_ann)
 
 
 @app.command()
