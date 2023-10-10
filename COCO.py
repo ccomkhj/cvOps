@@ -290,6 +290,7 @@ def update(
         default="", help="Locate images based on the split if the value is given."
     ),
 ):
+    assert validate(image_locate, new_ann_path) is True, "Images in coco and image DIR doesn't match."
     
     now = int(time.time())
     outcome_path = f"results/{now}"
@@ -343,6 +344,7 @@ def validate(
     
     if sorted(filenames_in_folder) == sorted(filenames_in_coco):
         print("Filenames in folder and filenames in coco exactly matches!!")
+        return True
     else:
         # Convert lists to sets
         set_coco = set(filenames_in_coco)
@@ -358,7 +360,7 @@ def validate(
         result = list(unique_to_coco.union(unique_to_folder))
 
         print("This files are not matching!! Please double check!!", result)
-    breakpoint()
+        return False
 
 @app.command()
 def delete(
