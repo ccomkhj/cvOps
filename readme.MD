@@ -78,13 +78,13 @@ If your source doesn't include license, include the blank license.
 2-3. Update COCO sample
 
 When updating computer vision projects, existing train and validation samples needs to be updated.
-Create Output Directories: The function creates a timestamped directory under the "results" folder to store the updated dataset and split datasets. It creates subdirectories for annotations (train and validation) and images (train and validation).
 
 Split New Annotations: It splits the new annotations (specified by new_ann_path) into train and validation sets based on the split_ratio and optionally reorganizes images using the image_locate directory. The result is saved as "new_train_images.json" and "new_val_images.json" in the output directories.
 
 Locate Existing Images: The function locates existing images specified by train_img_path and val_img_path based on the split and saves them in the corresponding output directories. Note that the image files must be provided in the appropriate directory structure.
 
 Merge Annotations: Finally, it merges the located images with their corresponding annotations for both the train and validation sets.
+When the coco merge process is successfully done, merge images manually. (To handle with the massive image size.)
 
 Example Usage:
 ```bash
@@ -92,12 +92,12 @@ python your_script.py update \
     --new_ann_path /path/to/new_annotations.json \
     --train_ann_path /path/to/train_annotations.json \
     --val_ann_path /path/to/val_annotations.json \
-    --train_img_path /path/to/train_images/ \
-    --val_img_path /path/to/val_images/ \
     --split_ratio 0.8 \
     --image_locate /path/to/images/
 ```
-This command will update and split the datasets as specified and store the results in timestamped directories under "results".
+`python COCO.py update data/new/annotations/instances_default.json data/original/train.json data/original/val.json 0.8 data/new/images`
+
+This command will update and split the datasets as specified and store the results in timestamped directories under "results/{epoch time}".
 
 2-4. Delete irrelevant categories
 - First, configure config file at `config/category_manage.yaml`

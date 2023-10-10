@@ -1,6 +1,7 @@
 import glob
 import os
 import numpy as np
+from pathlib import Path
 from PIL import Image
 from typing import Dict, List
 import json
@@ -87,3 +88,13 @@ def locate_images(source: str, destination: str) -> None:
     # For other errors
     except:
         print("Error occurred while copying file.")
+        
+        
+def get_image_files(directory):
+    image_extensions = ['.jpg', '.jpeg', '.png']
+    directory_path = Path(directory)
+
+    image_files = [file for file in directory_path.glob(
+        '*') if file.suffix.lower() in image_extensions]
+
+    return image_files
