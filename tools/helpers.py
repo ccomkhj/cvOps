@@ -94,7 +94,7 @@ def get_image_files(directory):
     image_extensions = ['.jpg', '.jpeg', '.png']
     directory_path = Path(directory)
 
-    image_files = [file for file in directory_path.glob(
+    image_files = [file.__str__() for file in directory_path.glob(
         '*') if file.suffix.lower() in image_extensions]
 
     return image_files

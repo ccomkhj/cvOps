@@ -115,14 +115,20 @@ python3 COCO.py process {config_file} {annotation_path}
 # i.e. python3 COCO.py process config/category_manage.yaml ann.json
 ```
 
-2-6. Convert Mask (pallete to binary mask)
+2-6. Validate COCO if it matches with image path.
+```bash
+python COCO.py validate /path/to/images /path/to/coco.json
+# i.e. python COCO.py validate data/new/images data/new/annotations/instances_default.json
+```
+
+2-7. Convert Mask (pallete to binary mask)
 - First, configure config file at `config/mask.yaml`
 
 ```bash
 python3 Mask.py convert {anns_dir} {mask_dir to save} 
 ```
 
-2-7. Convert Mask (COCO to binary mask)
+2-8. Convert Mask (COCO to binary mask)
 ```bash
 python3 Mask.py convert {anns_dir} {mask_dir to save} 
 ```

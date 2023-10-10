@@ -320,6 +320,46 @@ def update(
           outcome_val_ann, merge_images=False)
 
 
+
+@app.command()
+def validate(
+    img_path: str = typer.Argument(..., help="Path to image files"),
+    ann_path: str = typer.Argument(..., help="Path to COCO annotations file")
+):
+    '''
+    This code validates if all images in coco exist in img_path.
+    '''
+    
+    filenames_in_folder = get_image_files(img_path)
+    filenames_in_folder = [os.path.basename(i) for i in filenames_in_folder]
+    
+    coco = COCO(ann_path)
+    
+    img_ids = coco.getImgIds()
+    
+    # Get filenames for each image
+    filenames_in_coco = [os.path.basename(coco.loadImgs(image_id)[0]['file_name'])
+                 for image_id in img_ids]
+    
+    if sorted(filenames_in_folder) == sorted(filenames_in_coco):
+        print("Filenames in folder and filenames in coco exactly matches!!")
+    else:
+        # Convert lists to sets
+        set_coco = set(filenames_in_coco)
+        set_folder = set(filenames_in_folder)
+
+        # Elements unique to filenames_in_coco
+        unique_to_coco = set_coco - set_folder
+
+        # Elements unique to filenames_in_folder
+        unique_to_folder = set_folder - set_coco
+
+        # Combine the unique elements from both lists
+        result = list(unique_to_coco.union(unique_to_folder))
+
+        print("This files are not matching!! Please double check!!", result)
+    breakpoint()
+
 @app.command()
 def delete(
     config: str = typer.Argument(..., help="Path to category manage config file"),
