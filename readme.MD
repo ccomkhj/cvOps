@@ -3,6 +3,13 @@ cvOps is the open source tool to automate mask and annotation preprocessing befo
 
 ## Steps
 
+0. Installation
+```
+conda create -n cvops python=3.9
+conda activate cvops
+pip install -r requirements.txt
+```
+
 1. Quality check of annotation
 
 - Often annotation task is delegated to outsourcing company or freelancer.

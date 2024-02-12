@@ -37,7 +37,9 @@ class Data:
         full_path = os.path.join(self.image_dir, img_name)
 
         # Get objects and category ids
-        objects = [obj for obj in self.instances["annotations"] if obj["image_id"] == img_id]
+        objects = [
+            obj for obj in self.instances["annotations"] if obj["image_id"] == img_id
+        ]
         obj_categories_ids = [obj["category_id"] for obj in objects]
 
         # List of category ids of all objects
@@ -109,7 +111,9 @@ def prepare_colors(n_objects: int, shuffle: bool = True) -> list:
     # Get some colors
     hsv_tuples = [(x / n_objects, 1.0, 1.0) for x in range(n_objects)]
     colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
-    colors = list(map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors))
+    colors = list(
+        map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors)
+    )
 
     # Shuffle colors
     if shuffle:
@@ -126,7 +130,10 @@ def get_categories(instances: dict) -> dict:
     colors = prepare_colors(n_objects=80, shuffle=True)
     categories = list(
         zip(
-            [[category["id"], category["name"]] for category in instances["categories"]],
+            [
+                [category["id"], category["name"]]
+                for category in instances["categories"]
+            ],
             colors,
         )
     )
@@ -166,7 +173,7 @@ def draw_bboxes(draw, objects, labels, obj_categories, ignore, width, label_size
                     # TODO: Implement notification message as popup window
                     font = ImageFont.load_default()
 
-                tw, th = draw.textsize(text, font)
+                tw, th = textsize(text, font)
                 tx0 = b[0]
                 ty0 = b[1] - th
 
@@ -258,7 +265,9 @@ class ImageList:
 class ImagePanel(ttk.Frame):
     """ttk port of original turtle.ScrolledCanvas code."""
 
-    def __init__(self, parent, width=768, height=480, canvwidth=600, canvheight=500):
+    def __init__(
+        self, parent, width=768 * 2, height=480 * 2, canvwidth=600, canvheight=500
+    ):
         super().__init__(parent, width=width, height=height)
         self._rootwindow = self.winfo_toplevel()
         self.width, self.height = width, height
@@ -274,9 +283,13 @@ class ImagePanel(ttk.Frame):
             relief="sunken",
             borderwidth=2,
         )
-        self.hscroll = ttk.Scrollbar(parent, command=self._canvas.xview, orient=tk.HORIZONTAL)
+        self.hscroll = ttk.Scrollbar(
+            parent, command=self._canvas.xview, orient=tk.HORIZONTAL
+        )
         self.vscroll = ttk.Scrollbar(parent, command=self._canvas.yview)
-        self._canvas.configure(xscrollcommand=self.hscroll.set, yscrollcommand=self.vscroll.set)
+        self._canvas.configure(
+            xscrollcommand=self.hscroll.set, yscrollcommand=self.vscroll.set
+        )
 
         self.rowconfigure(0, weight=1, minsize=0)
         self.columnconfigure(0, weight=1, minsize=0)
@@ -331,8 +344,12 @@ class ImagePanel(ttk.Frame):
                 self.canvheight // 2,
             ),
         )
-        self._canvas.xview_moveto(0.5 * (self.canvwidth - self.width + 30) / self.canvwidth)
-        self._canvas.yview_moveto(0.5 * (self.canvheight - self.height + 30) / self.canvheight)
+        self._canvas.xview_moveto(
+            0.5 * (self.canvwidth - self.width + 30) / self.canvwidth
+        )
+        self._canvas.yview_moveto(
+            0.5 * (self.canvheight - self.height + 30) / self.canvheight
+        )
         self.adjust_scrolls()
 
     def adjust_scrolls(self):
@@ -462,14 +479,20 @@ class ObjectsPanel(ttk.PanedWindow):
             borderwidth=2,
             background="gray50",
         ).pack(side=tk.TOP, fill=tk.X)
-        self.category_box = tk.Listbox(self.category_subpanel, selectmode=tk.EXTENDED, exportselection=0)
+        self.category_box = tk.Listbox(
+            self.category_subpanel, selectmode=tk.EXTENDED, exportselection=0
+        )
         self.category_box.pack(side=tk.TOP, fill=tk.Y, expand=True)
         self.add(self.category_subpanel)
 
         # Objects subpanel
         self.object_subpanel = ttk.Frame()
-        ttk.Label(self.object_subpanel, text="objects", borderwidth=2, background="gray50").pack(side=tk.TOP, fill=tk.X)
-        self.object_box = tk.Listbox(self.object_subpanel, selectmode=tk.EXTENDED, exportselection=0)
+        ttk.Label(
+            self.object_subpanel, text="objects", borderwidth=2, background="gray50"
+        ).pack(side=tk.TOP, fill=tk.X)
+        self.object_box = tk.Listbox(
+            self.object_subpanel, selectmode=tk.EXTENDED, exportselection=0
+        )
         self.object_box.pack(side=tk.TOP, fill=tk.Y, expand=True)
         self.add(self.object_subpanel)
 
@@ -480,20 +503,28 @@ class SlidersBar(ttk.Frame):
         self.pack(side=tk.BOTTOM, fill=tk.X)
 
         # Bbox thickness controller
-        self.bbox_slider = tk.Scale(self, label="bbox", from_=0, to=25, tickinterval=5, orient=tk.HORIZONTAL)
+        self.bbox_slider = tk.Scale(
+            self, label="bbox", from_=0, to=25, tickinterval=5, orient=tk.HORIZONTAL
+        )
         self.bbox_slider.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         # Label text size controller
-        self.label_slider = tk.Scale(self, label="label", from_=10, to=100, tickinterval=25, orient=tk.HORIZONTAL)
+        self.label_slider = tk.Scale(
+            self, label="label", from_=10, to=100, tickinterval=25, orient=tk.HORIZONTAL
+        )
         self.label_slider.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         # Mask transparency controller
-        self.mask_slider = tk.Scale(self, label="mask", from_=0, to=255, tickinterval=50, orient=tk.HORIZONTAL)
+        self.mask_slider = tk.Scale(
+            self, label="mask", from_=0, to=255, tickinterval=50, orient=tk.HORIZONTAL
+        )
         self.mask_slider.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
 
 class Controller:
-    def __init__(self, data, root, image_panel, statusbar, menu, objects_panel, sliders):
+    def __init__(
+        self, data, root, image_panel, statusbar, menu, objects_panel, sliders
+    ):
         self.data = data  # data layer
         self.root = root  # root window
         self.image_panel = image_panel  # image panel
@@ -522,13 +553,21 @@ class Controller:
         self.masks_on_global = tk.BooleanVar()  # Toggles masks globally
         self.masks_on_global.set(True)
         self.coloring_on_global = tk.BooleanVar()  # Toggles objects/categories coloring
-        self.coloring_on_global.set(False)  # False for categories (defaults), True for objects
+        self.coloring_on_global.set(
+            False
+        )  # False for categories (defaults), True for objects
         # Menu Configuration
         self.menu.file.entryconfigure("Save", command=self.save_image)
         self.menu.file.entryconfigure("Exit", command=self.exit)
-        self.menu.view.entryconfigure("BBoxes", variable=self.bboxes_on_global, command=self.menu_view_bboxes)
-        self.menu.view.entryconfigure("Labels", variable=self.labels_on_global, command=self.menu_view_labels)
-        self.menu.view.entryconfigure("Masks", variable=self.masks_on_global, command=self.menu_view_masks)
+        self.menu.view.entryconfigure(
+            "BBoxes", variable=self.bboxes_on_global, command=self.menu_view_bboxes
+        )
+        self.menu.view.entryconfigure(
+            "Labels", variable=self.labels_on_global, command=self.menu_view_labels
+        )
+        self.menu.view.entryconfigure(
+            "Masks", variable=self.masks_on_global, command=self.menu_view_masks
+        )
         self.menu.view.colormenu.entryconfigure(
             "Categories",
             variable=self.coloring_on_global,
@@ -550,7 +589,9 @@ class Controller:
         self.selected_objs = None
         self.category_box_content = tk.StringVar()
         self.object_box_content = tk.StringVar()
-        self.objects_panel.category_box.configure(listvariable=self.category_box_content)
+        self.objects_panel.category_box.configure(
+            listvariable=self.category_box_content
+        )
         self.objects_panel.object_box.configure(listvariable=self.object_box_content)
 
         # Sliders Setup
@@ -560,9 +601,15 @@ class Controller:
         self.label_size.set(15)
         self.mask_alpha = tk.IntVar()
         self.mask_alpha.set(128)
-        self.sliders.bbox_slider.configure(variable=self.bbox_thickness, command=lambda e: self.update_img())
-        self.sliders.label_slider.configure(variable=self.label_size, command=lambda e: self.update_img())
-        self.sliders.mask_slider.configure(variable=self.mask_alpha, command=lambda e: self.update_img())
+        self.sliders.bbox_slider.configure(
+            variable=self.bbox_thickness, command=lambda e: self.update_img()
+        )
+        self.sliders.label_slider.configure(
+            variable=self.label_size, command=lambda e: self.update_img()
+        )
+        self.sliders.mask_slider.configure(
+            variable=self.mask_alpha, command=lambda e: self.update_img()
+        )
 
         # Bind all events
         self.bind_events()
@@ -602,7 +649,9 @@ class Controller:
             draw_masks(draw, objects, names_colors, ignore, alpha)
         # Draw bounding boxes
         if bboxes_on:
-            draw_bboxes(draw, objects, labels_on, names_colors, ignore, width, label_size)
+            draw_bboxes(
+                draw, objects, labels_on, names_colors, ignore, width, label_size
+            )
         del draw
         # Resulting image
         self.current_composed_image = Image.alpha_composite(img_open, draw_layer)
@@ -628,7 +677,11 @@ class Controller:
         if self.selected_objs is None:
             ignore = []
         else:
-            ignore = [i for i in range(len(self.current_img_obj_categories)) if i not in self.selected_objs]
+            ignore = [
+                i
+                for i in range(len(self.current_img_obj_categories))
+                if i not in self.selected_objs
+            ]
 
         width = self.bbox_thickness.get() if width is None else width
         alpha = self.mask_alpha.get() if alpha is None else alpha
@@ -659,9 +712,13 @@ class Controller:
         self.image_panel.reset(canvwidth=w, canvheight=h)
 
         # Update statusbar vars
-        self.file_count_status.set(f"{str(self.data.images.n + 1)}/{self.data.images.max}")
+        self.file_count_status.set(
+            f"{str(self.data.images.n + 1)}/{self.data.images.max}"
+        )
         self.file_name_status.set(f"{self.data.current_image[-1]}")
-        self.description_status.set(f"{self.data.instances.get('info', {}).get('description', '')}")
+        self.description_status.set(
+            f"{self.data.instances.get('info', {}).get('description', '')}"
+        )
         self.nobjects_status.set(f"objects: {len(self.current_img_obj_categories)}")
         self.ncategories_status.set(f"categories: {len(self.current_img_categories)}")
 
@@ -764,7 +821,9 @@ class Controller:
     def update_category_box(self):
         ids = self.current_img_categories
         names = [self.data.categories[i][0] for i in ids]
-        self.category_box_content.set([" ".join([str(i), str(n)]) for i, n in zip(ids, names)])
+        self.category_box_content.set(
+            [" ".join([str(i), str(n)]) for i, n in zip(ids, names)]
+        )
         self.objects_panel.category_box.selection_clear(0, tk.END)
         if self.selected_cats is not None:
             for i in self.selected_cats:
@@ -789,7 +848,9 @@ class Controller:
     def update_object_box(self):
         ids = self.current_img_obj_categories
         names = [self.data.categories[i][0] for i in ids]
-        self.object_box_content.set([" ".join([str(i), str(n)]) for i, n in enumerate(names)])
+        self.object_box_content.set(
+            [" ".join([str(i), str(n)]) for i, n in enumerate(names)]
+        )
         self.objects_panel.object_box.selection_clear(0, tk.END)
         if self.selected_objs is not None:
             for i in self.selected_objs:
@@ -817,13 +878,19 @@ class Controller:
         self.masks_slider_status_update()
 
     def bbox_slider_status_update(self):
-        self.sliders.bbox_slider.configure(state=tk.NORMAL if self.bboxes_on_local else tk.DISABLED)
+        self.sliders.bbox_slider.configure(
+            state=tk.NORMAL if self.bboxes_on_local else tk.DISABLED
+        )
 
     def label_slider_status_update(self):
-        self.sliders.label_slider.configure(state=tk.NORMAL if self.labels_on_local else tk.DISABLED)
+        self.sliders.label_slider.configure(
+            state=tk.NORMAL if self.labels_on_local else tk.DISABLED
+        )
 
     def masks_slider_status_update(self):
-        self.sliders.mask_slider.configure(state=tk.NORMAL if self.masks_on_local else tk.DISABLED)
+        self.sliders.mask_slider.configure(
+            state=tk.NORMAL if self.masks_on_local else tk.DISABLED
+        )
 
     def bind_events(self):
         """Binds events."""
@@ -852,3 +919,10 @@ class Controller:
         self.objects_panel.object_box.bind("<<ListboxSelect>>", self.select_object)
         self.image_panel.bind("<Button-1>", lambda e: self.image_panel.focus_set())
 
+
+# handle the deprecated textsize attribute
+def textsize(text, font):
+    im = Image.new(mode="P", size=(0, 0))
+    draw = ImageDraw.Draw(im)
+    _, _, width, height = draw.textbbox((0, 0), text=text, font=font)
+    return width, height

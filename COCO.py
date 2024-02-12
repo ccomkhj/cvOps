@@ -100,10 +100,6 @@ def visualizebox(
 def merge(
     img_dir: str = typer.Argument(..., help="directory of images"),
     ann_dir: str = typer.Argument(..., help="directory of annotations"),
-    merge_images: bool = typer.Option(
-        False,
-        help="Merge also images with the flag of --merge_images",
-    ),
 ):
     """
     [bold green]Merge coco sample[/bold green]
@@ -125,7 +121,7 @@ def merge(
 
     # Create COCO_Assistant object
     cas = COCO_Assistant(img_dir, ann_dir)
-    cas.merge(merge_images=merge_images)
+    cas.merge()
 
 
 @app.command()
@@ -338,8 +334,8 @@ def update(
     locate_images(val_ann_path, os.path.join(outcome_val_ann, "existing_val.json"))
 
     # Merge train and val coco json
-    merge(outcome_train_img, outcome_train_ann, merge_images=False)
-    merge(outcome_val_img, outcome_val_ann, merge_images=False)
+    merge(outcome_train_img, outcome_train_ann)
+    merge(outcome_val_img, outcome_val_ann)
 
 
 @app.command()
