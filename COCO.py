@@ -228,7 +228,7 @@ def split(
 
         else:
 
-            X_train, X_test = train_test_split(images, train_size=split)
+            X_train, X_test = train_test_split(images, train_size=split, shuffle= True)
 
             anns_train = filter_annotations(annotations, X_train)
             anns_test = filter_annotations(annotations, X_test)
