@@ -195,6 +195,7 @@ def draw_bboxes(draw, objects, labels, obj_categories, ignore, width, label_size
 
 def draw_masks(draw, objects, obj_categories, ignore, alpha):
     """Draws a masks over image."""
+    breakpoint()
     masks = [obj["segmentation"] for obj in objects]
     # Draw masks
     for i, (c, m) in enumerate(zip(obj_categories, masks)):
@@ -551,7 +552,7 @@ class Controller:
         self.labels_on_global = tk.BooleanVar()  # Toggles category labels
         self.labels_on_global.set(True)
         self.masks_on_global = tk.BooleanVar()  # Toggles masks globally
-        self.masks_on_global.set(True)
+        self.masks_on_global.set(False)
         self.coloring_on_global = tk.BooleanVar()  # Toggles objects/categories coloring
         self.coloring_on_global.set(
             False

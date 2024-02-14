@@ -1,1 +1,5 @@
-file_name: fname
+images:
+  file_name: fname
+  height: height
+  width: width
+
