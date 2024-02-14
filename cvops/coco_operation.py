@@ -82,7 +82,6 @@ def visualizebox(
     """
 
     # Create COCO_Assistant object
-
     root = tk.Tk()
     root.title("COCO Viewer")
 
@@ -258,10 +257,9 @@ def split(
         # if the path is given,
 
         # Create folder of images next to train and test file
-        parent_dir = os.path.dirname(train_path)
-        grand_parent = os.path.dirname(os.path.dirname(parent_dir))
+        parent_dir = os.path.dirname(image_locate)
         destDir_train = os.path.join(
-            grand_parent, "train", "images", "new_train_images"
+            parent_dir, "train_images"
         )
         os.makedirs(destDir_train, exist_ok=True)
 
@@ -273,7 +271,7 @@ def split(
             locate_images(source, destination)
 
         # if the path is given,
-        destDir_test = os.path.join(grand_parent, "val", "images", "new_val_images")
+        destDir_test = os.path.join(parent_dir, "val_images")
         os.makedirs(destDir_test, exist_ok=True)
 
         for test_obj in X_test:

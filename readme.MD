@@ -31,7 +31,7 @@ Example:
 │   ├── sample2.json
 │   ├── sample3.json
 
-python3 COCO.py visualize {images_dir} {anns_dir}
+python3 coco_operation.py visualize {images_dir} {anns_dir}
 ```
 :warning: It doesn't work if you link to external disk.
 
@@ -46,12 +46,12 @@ Example:
     |
     ├── ann_path
 
-python3 COCO.py visualizebox {images_dir} {anns_path}
+python3 coco_operation.py visualizebox {images_dir} {anns_path}
 ```
 
 1-3. Mask samples :mask:
 ```bash
-python3 Mask.py visualize {images_dir} {anns_dir}
+python3 mask_operation.py visualize {images_dir} {anns_dir}
 ```
 
 1. Process annotations
@@ -59,15 +59,15 @@ python3 Mask.py visualize {images_dir} {anns_dir}
 2-1. Merge COCO sample
 
 ```bash
-python3 COCO.py merge {images_dir} {anns_dir}
+python3 coco_operation.py merge {images_dir} {anns_dir}
 ```
 
 2-2. Split COCO sample
 (Specify file name, check the example)
 
 ```bash
-python3 COCO.py split {annotation path} {path to train annotation} {path to test annotation} {split ratio between 0 and 1} {images path, optional}
-# i.e. python3 COCO.py split anns/new.json results/train/train.json results/test/test.json 0.8 images
+python3 coco_operation.py split {annotation path} {path to train annotation} {path to test annotation} {split ratio between 0 and 1} {images path, optional}
+# i.e. python3 coco_operation.py split anns/new.json results/train/train.json results/test/test.json 0.8 images
 ```
 If your source doesn't include license, include the blank license.
 ```json
@@ -102,7 +102,7 @@ python your_script.py update \
     --split_ratio 0.8 \
     --image_locate /path/to/images/
 ```
-`python COCO.py update data/new/annotations/instances_default.json data/original/train.json data/original/val.json 0.8 data/new/images`
+`python coco_operation.py update data/new/annotations/instances_default.json data/original/train.json data/original/val.json 0.8 data/new/images`
 
 This command will update and split the datasets as specified and store the results in timestamped directories under "results/{epoch time}".
 
@@ -110,46 +110,46 @@ This command will update and split the datasets as specified and store the resul
 - First, configure config file at `config/category_manage.yaml`
 
 ``` bash
-python3 COCO.py delete {config_file} {annotation_path}
-# i.e. python3 COCO.py delete config/category_manage.yaml ann.json
+python3 coco_operation.py delete {config_file} {annotation_path}
+# i.e. python3 coco_operation.py delete config/category_manage.yaml ann.json
 ```
 
 2-5. Process category & annotation
 - Convert category name and merge duplicated categories
 
 ```bash
-python3 COCO.py process {config_file} {annotation_path}
-# i.e. python3 COCO.py process config/category_manage.yaml ann.json
+python3 coco_operation.py process {config_file} {annotation_path}
+# i.e. python3 coco_operation.py process config/category_manage.yaml ann.json
 ```
 
 2-6. Validate COCO if it matches with image path.
 ```bash
-python COCO.py validate /path/to/images /path/to/coco.json
-# i.e. python COCO.py validate data/new/images data/new/annotations/instances_default.json
+python coco_operation.py validate /path/to/images /path/to/coco.json
+# i.e. python coco_operation.py validate data/new/images data/new/annotations/instances_default.json
 ```
 
 2-7. Convert Mask (pallete to binary mask)
 - First, configure config file at `config/mask.yaml`
 
 ```bash
-python3 Mask.py convert {anns_dir} {mask_dir to save} 
+python3 mask_operation.py convert {anns_dir} {mask_dir to save} 
 ```
 
 2-8. Convert Mask (COCO to binary mask)
 ```bash
-python3 Mask.py convert {anns_dir} {mask_dir to save} 
+python3 mask_operation.py convert {anns_dir} {mask_dir to save} 
 ```
 if you want to consider all instances, add `--multi` tag in command.
 
 
 After converting, show the mask.
 ```bash
-python3 Mask.py show {mask_dir} 
+python3 mask_operation.py show {mask_dir} 
 ```
 
 When a annotation tool has random color of mask, use code below to check the color code.
 ```bash
-python3 Mask.py checkcolor {mask_dir} 
+python3 mask_operation.py checkcolor {mask_dir} 
 ```
 
 ## Additional Function
@@ -157,14 +157,14 @@ python3 Mask.py checkcolor {mask_dir}
 1. Convert AiHub Json format to COCO Json format
 - If you have AiHub json files, you can convert it to COCO json format.
 ```bash
-python3 COCO.py convertjsonformat {json_aihub_dir} {json_coco_dir}
+python3 coco_operation.py convertjsonformat {json_aihub_dir} {json_coco_dir}
 ```
 
 2. Replace the image extension
 - If you have converted your image format, you should change the extension in the annotation file too. You can simply replace it using this function.
 ```bash
-python3 COCO.py replaceimgformat {ann_file_path} {desired_extension}
-# i.e. python3 COCO.py replaceimgformat ann.json jpg
+python3 coco_operation.py replaceimgformat {ann_file_path} {desired_extension}
+# i.e. python3 coco_operation.py replaceimgformat ann.json jpg
 ```
 
 ## Install
