@@ -3,9 +3,7 @@ funcy
 scikit-multilearn
 typer
 rich
+git+https://github.com/ccomkhj/COCO-Assistant.git
 PyQt5
 pyyaml
 loguru
-pytest
-pytest-mock
-fiftyone

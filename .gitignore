@@ -1,8 +1,4 @@
 *.json
 *.jpg
-*.JPG
-*.tar
 *.png
 __pycache__
-build
-cvops.egg-info
