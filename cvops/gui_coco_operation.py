@@ -17,7 +17,6 @@ from PyQt5.QtWidgets import (
     QCheckBox,
     QGridLayout
 )
-from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt, QSize
 
 from coco_assistant import COCO_Assistant
