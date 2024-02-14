@@ -6,6 +6,7 @@ import funcy
 import numpy as np
 import typer
 import time
+import shutil
 import yaml
 from tqdm import tqdm
 from coco_assistant import COCO_Assistant
@@ -426,7 +427,50 @@ def delete(
 
     print("Successfully deleted the desired categories.")
 
+@app.command()
+def postupdate(
+    detections_1_path: str = typer.Argument(..., help="Path to detections_1 directory"),
+    detections_2_copy_path: str = typer.Argument(..., help="Path to detections_2 copy directory"),
+    results_path: str = typer.Argument(..., help="Path to results directory containing the merged JSON annotations")
+):
+    """
+    Combines new and existing image datasets from specified directories and moves corresponding annotations to the processed_result directory.
+    """
+    new_train_images_dir = os.path.join(detections_1_path, "train_images")
+    new_val_images_dir = os.path.join(detections_1_path, "val_images")
+    prev_train_images_dir = os.path.join(detections_2_copy_path, "train_images")
+    prev_val_images_dir = os.path.join(detections_2_copy_path, "val_images")
 
+    new_train_ann_path = os.path.join(results_path, "train/results/merged/annotations/merged.json")
+    new_val_ann_path = os.path.join(results_path, "val/results/merged/annotations/merged.json")
+
+    processed_result_dir = "processed_result"
+    processed_train_dir = os.path.join(processed_result_dir, "train_images")
+    processed_val_dir = os.path.join(processed_result_dir, "val_images")
+
+    # Create directories
+    os.makedirs(processed_train_dir, exist_ok=True)
+    os.makedirs(processed_val_dir, exist_ok=True)
+
+    # Function to copy images
+    def copy_images(source_dir, dest_dir):
+        for filename in os.listdir(source_dir):
+            source_path = os.path.join(source_dir, filename)
+            dest_path = os.path.join(dest_dir, filename)
+            if not os.path.exists(dest_path):
+                shutil.copy(source_path, dest_path)
+
+    # Copy images from sources to destinations
+    copy_images(new_train_images_dir, processed_train_dir)
+    copy_images(prev_train_images_dir, processed_train_dir)
+    copy_images(new_val_images_dir, processed_val_dir)
+    copy_images(prev_val_images_dir, processed_val_dir)
+
+    # Move annotations
+    shutil.copy(new_train_ann_path, os.path.join(processed_result_dir, 'train.json'))
+    shutil.copy(new_val_ann_path, os.path.join(processed_result_dir, 'val.json'))
+
+    typer.echo("Post-processing completed successfully.")
 @app.command()
 def process(
     config: str = typer.Argument(..., help="Path to category manage config file"),
