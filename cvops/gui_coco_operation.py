@@ -30,6 +30,22 @@ from cvops.coco_operation import visualize as coco_visualize
 
 
 class VisualizeDialog(QDialog):
+    """
+    A dialog window for visualizing annotations with COCO format.
+
+    Allows users to select an image directory and an annotation file (in JSON format),
+    and then visualizes the specified annotations on the images. This is useful for
+    verifying the correctness of annotations or for data analysis purposes.
+
+    Attributes:
+        imgDirLabel (QLabel): Displays the selected image directory path.
+        annPathLabel (QLabel): Displays the selected annotation file path.
+
+    Methods:
+        selectImgDir(): Opens a file dialog to select the image directory.
+        selectAnnPath(): Opens a file dialog to select the annotation file.
+        visualize(): Validates selected paths and initiates the visualization process.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Visualize")
@@ -75,8 +91,26 @@ class VisualizeDialog(QDialog):
         coco_visualize(img_dir, ann_path)  # Assuming this is the correct name for the segmentation visualization function
         QMessageBox.information(self, "Visualize", "Visualization completed.")
 
-# # Dialog for Merge functionality
 class MergeDialog(QDialog):
+    """
+    A dialog window for merging multiple COCO datasets into a single dataset.
+
+    The dialog facilitates the merging process by allowing users to select directories
+    for the images and annotations of the datasets they wish to merge. Users can 
+    optionally choose to merge the images as well. This feature is particularly useful
+    for tasks that involve consolidating datasets from different sources to create a 
+    larger, comprehensive dataset for training or evaluation purposes.
+
+    Attributes:
+        imgDirLabel (QLabel): Displays the path of the selected image directory where the COCO images are located.
+        annDirLabel (QLabel): Displays the path of the selected annotation directory where the COCO annotation files are stored.
+        mergeImagesCheckBox (QCheckBox): Allows users to specify whether or not to merge the images from different datasets.
+
+    Methods:
+        selectImgDir(): Opens a file dialog to select the directory containing the images to be merged.
+        selectAnnDir(): Opens a file dialog to select the directory containing the annotation files to be merged.
+        merge(): Validates selected directories and initiates the merging process.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Merge COCO Datasets")
@@ -130,8 +164,25 @@ class MergeDialog(QDialog):
         QMessageBox.information(self, "Merge", "Datasets merged successfully.")
 
 
-# # Dialog for Split functionality
 class SplitDialog(QDialog):
+    """
+    A dialog window for splitting a COCO dataset into training and validation sets.
+
+    This dialog allows users to select an image directory and an annotation file, then specify
+    a ratio for splitting the dataset. The process facilitates dividing a dataset into separate
+    parts for the purpose of training and validating machine learning models, ensuring that
+    there is no overlap between the training and validation datasets.
+
+    Attributes:
+        imgDirLabel (QLabel): Displays the path of the selected image directory.
+        annPathLabel (QLabel): Displays the path of the selected annotation file.
+        splitRatioLineEdit (QLineEdit): Input field for specifying the train-validation split ratio.
+
+    Methods:
+        selectImgDir(): Opens a dialog to select the image directory for the dataset to be split.
+        selectAnnPath(): Opens a dialog to select the annotation file corresponding to the dataset.
+        split(): Validates inputs and initiates the dataset splitting process based on the specified ratio.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Split COCO Dataset")
@@ -199,6 +250,28 @@ class SplitDialog(QDialog):
         QMessageBox.information(self, "Split", "Dataset split successfully.")
 
 class UpdateDialog(QDialog):
+    """
+    A dialog window for updating COCO datasets with new images and annotations.
+
+    The dialog provides a user-friendly interface for selecting new image locations and
+    corresponding new annotations, in addition to existing training and validation
+    annotation files. This functionality supports the iterative refinement and expansion
+    of datasets - an essential task in machine learning workflows to improve model performance.
+
+    Attributes:
+        newAnnPathLabel (QLabel): Displays the path of the selected new annotation file.
+        imgLocateLabel (QLabel): Displays the path of the selected new image location.
+        trainAnnPathLabel (QLabel): Displays the path of the selected training annotation file.
+        valAnnPathLabel (QLabel): Displays the path of the selected validation annotation file.
+        splitRatioLineEdit (QLineEdit): Input field for specifying new data's train-validation split ratio.
+
+    Methods:
+        selectNewAnnPath(): Opens a dialog to select the new annotation file to be added to the dataset.
+        selectImageLocation(): Opens a dialog to select the location of the new images to be added.
+        selectTrainAnnPath(): Opens a dialog to select the existing training annotations file.
+        selectValAnnPath(): Opens a dialog to select the existing validation annotations file.
+        update(): Validates inputs and initiates the dataset updating process based on the specified inputs and ratio.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Update COCO Dataset")
@@ -332,6 +405,23 @@ class UpdateDialog(QDialog):
         self.accept()
 
 class PostUpdateDialog(QDialog):
+    """
+    A dialog window for performing post-update operations on COCO datasets.
+
+    After a dataset has been updated with new annotations and images, certain post-update
+    steps may be necessary. This dialog offers options for processing the updated dataset,
+    such as reorganizing files, updating indices, or applying additional transformations.
+    This is crucial for maintaining dataset integrity and ensuring compatibility with
+    machine learning pipelines.
+
+    Attributes:
+        useLatestConfigCheckbox (QCheckBox): Checkbox for opting to use the latest update configurations automatically.
+
+    Methods:
+        toggleDirSelection(state): Enables or disables directory selection based on the checkbox state.
+        selectDirectory(labelWidget, dialogTitle): Opens a dialog to select directories for new samples, existing samples, or results.
+        postUpdate(): Initiates the post-update operation based on the selected directories and configurations.
+    """
     def __init__(self, parent=None):
         super(PostUpdateDialog, self).__init__(parent)
         self.setWindowTitle("Post Update COCO Dataset")
