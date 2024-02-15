@@ -1,11 +1,8 @@
-scikit-learn
 funcy
-scikit-multilearn
 typer
 rich
 PyQt5
 pyyaml
-loguru
 pytest
 pytest-mock
 fiftyone
