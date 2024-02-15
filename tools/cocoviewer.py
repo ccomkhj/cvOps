@@ -195,7 +195,6 @@ def draw_bboxes(draw, objects, labels, obj_categories, ignore, width, label_size
 
 def draw_masks(draw, objects, obj_categories, ignore, alpha):
     """Draws a masks over image."""
-    breakpoint()
     masks = [obj["segmentation"] for obj in objects]
     # Draw masks
     for i, (c, m) in enumerate(zip(obj_categories, masks)):

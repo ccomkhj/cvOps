@@ -1,3 +1,7 @@
+"""
+Huijo Kim (huijo@hexafarms.com)
+"""
+
 import sys
 import os
 import yaml
@@ -5,7 +9,6 @@ import atexit
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
-    QAction,
     QFileDialog,
     QMessageBox,
     QDialog,
@@ -14,21 +17,17 @@ from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
     QWidget,
-    QMenu,
     QCheckBox,
     QGridLayout
 )
 from PyQt5.QtCore import Qt, QSize
 
 from coco_assistant import COCO_Assistant
-from pycocotools.coco import COCO
 from cvops.coco_operation import update as coco_update
 from cvops.coco_operation import postupdate as coco_postupdate
 from cvops.coco_operation import split as coco_split
 from cvops.coco_operation import visualize as coco_visualize
 
-# Placeholder for importing your script's functionalities
-# from your_script import visualize, merge, split, ...
 
 class VisualizeDialog(QDialog):
     def __init__(self, parent=None):
@@ -185,8 +184,8 @@ class SplitDialog(QDialog):
             )
             return
 
-        train_path = os.path.join(os.path.dirname(ann_path) + "train.json")
-        val_path = os.path.join(os.path.dirname(ann_path) + "val.json")
+        train_path = os.path.join(os.path.dirname(ann_path), "train.json")
+        val_path = os.path.join(os.path.dirname(ann_path), "val.json")
 
         # Include the image_locate argument when calling coco_split
         coco_split(
@@ -387,12 +386,11 @@ class PostUpdateDialog(QDialog):
                     config = yaml.safe_load(file)
                 
                 # Using full paths from the configuration
-                new_samples_dir = os.path.dirname(config.get('new_image_locate', ''))
                 existing_samples_dir = os.path.dirname(config.get('train_ann_path', ''))
                 results_path = os.path.dirname(os.path.dirname(config.get('outcome_train_ann', '')))
 
                 # Validate paths are valid directories
-                if not (os.path.isdir(new_samples_dir) and os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)):
+                if not (os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)):
                     raise ValueError("One or more directories from the config don't exist.")
             
             except FileNotFoundError:
@@ -406,18 +404,16 @@ class PostUpdateDialog(QDialog):
                 return
         else:
             # Extract directly provided paths from the dialog's fields
-            new_samples_dir = self.newSamplesDirLabel.text().split(": ")[1].strip()
             existing_samples_dir = self.existingSamplesDirLabel.text().split(": ")[1].strip()
             results_path = self.resultsDirLabel.text().split(": ")[1].strip()
 
             # Direct paths validation
-            if not (os.path.isdir(new_samples_dir) and os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)):
+            if not (os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)):
                 QMessageBox.critical(self, "Error", "Please select valid directories.")
                 return
 
         try:
             train_json, train_img_dir, val_json, val_img_dir = coco_postupdate(
-                new_samples_dir=new_samples_dir, 
                 existing_samples_dir=existing_samples_dir, 
                 results_path=results_path)
             QMessageBox.information(self, "Post-update", "Dataset post-update completed successfully.")
