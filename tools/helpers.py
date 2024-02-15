@@ -6,6 +6,7 @@ from PIL import Image
 from typing import Dict, List
 import json
 import funcy
+from pycocotools.coco import COCO
 import shutil
 
 def load(path: str) -> List[str]:
@@ -108,3 +109,18 @@ def get_image_files(directory):
         '*') if file.suffix.lower() in image_extensions]
 
     return image_files
+
+def has_segmentation_data(ann_path: str) -> bool:
+    """
+    Checks if the COCO annotation file contains segmentation data.
+    """
+    coco = COCO(ann_path)
+    catIds = coco.getCatIds()
+    imgIds = coco.getImgIds()
+    for imgId in imgIds:
+        annIds = coco.getAnnIds(imgIds=imgId, catIds=catIds, iscrowd=None)
+        anns = coco.loadAnns(annIds)
+        for ann in anns:
+            if 'segmentation' in ann and ann['segmentation']:
+                return True
+    return False

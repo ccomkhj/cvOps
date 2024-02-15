@@ -22,6 +22,7 @@ from tools.helpers import (
     locate_images,
     save_coco,
     get_image_files,
+    has_segmentation_data
 )
 
 import tkinter as tk
@@ -58,8 +59,12 @@ def visualize(
     [/blue]
     """
 
-    # Create COCO_Assistant object
-    cocovis.visualise_all(COCO(ann), img_dir)
+    if has_segmentation_data(ann):
+       cocovis.visualise_all(COCO(ann), img_dir)
+
+    else:
+        print("No segmentation found in annotation, so draw bboxes.")
+        visualizebox(img_dir, ann)
 
 
 @app.command()
@@ -518,6 +523,8 @@ def postupdate(
     shutil.copy(new_val_ann_path, os.path.join(processed_result_dir, 'val.json'))
 
     typer.echo("Post-processing completed successfully.")
+    
+    return os.path.join(processed_result_dir, 'train.json'), processed_train_dir, os.path.join(processed_result_dir, 'val.json'), processed_val_dir
     
 @app.command()
 def process(

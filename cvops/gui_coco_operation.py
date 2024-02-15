@@ -26,7 +26,6 @@ from cvops.coco_operation import update as coco_update
 from cvops.coco_operation import postupdate as coco_postupdate
 from cvops.coco_operation import split as coco_split
 from cvops.coco_operation import visualize as coco_visualize
-from cvops.coco_operation import visualizebox as coco_visualizebox
 
 # Placeholder for importing your script's functionalities
 # from your_script import visualize, merge, split, ...
@@ -51,15 +50,10 @@ class VisualizeDialog(QDialog):
         annPathButton.clicked.connect(self.selectAnnPath)
         layout.addWidget(annPathButton)
 
-        # Button for visualizing bounding boxes
-        visualizeBoxButton = QPushButton("Visualize Bounding Boxes")
-        visualizeBoxButton.clicked.connect(self.visualizeBoxes)
-        layout.addWidget(visualizeBoxButton)
-        
         # Button for visualizing segmentations
-        visualizeSegmentationButton = QPushButton("Visualize Segmentations")
-        visualizeSegmentationButton.clicked.connect(self.visualizeSegmentations)
-        layout.addWidget(visualizeSegmentationButton)
+        visualizeButton = QPushButton("Visualize")
+        visualizeButton.clicked.connect(self.visualize)
+        layout.addWidget(visualizeButton)
 
         self.setLayout(layout)
 
@@ -73,23 +67,14 @@ class VisualizeDialog(QDialog):
         if annPath:
             self.annPathLabel.setText(f"Annotation File: {annPath}")
 
-    def visualizeBoxes(self):
-        img_dir = self.imgDirLabel.text().replace("Image Directory: ", "")
-        ann_path = self.annPathLabel.text().replace("Annotation File: ", "")
-        if not os.path.exists(img_dir) or not os.path.exists(ann_path):
-            QMessageBox.critical(self, "Error", "Please select valid image directory and annotation file.")
-            return
-        coco_visualizebox(img_dir, ann_path)
-        QMessageBox.information(self, "Visualize Bounding Boxes", "Visualization completed.")
-
-    def visualizeSegmentations(self):
+    def visualize(self):
         img_dir = self.imgDirLabel.text().replace("Image Directory: ", "")
         ann_path = self.annPathLabel.text().replace("Annotation File: ", "")
         if not os.path.exists(img_dir) or not os.path.exists(ann_path):
             QMessageBox.critical(self, "Error", "Please select valid image directory and annotation file.")
             return
         coco_visualize(img_dir, ann_path)  # Assuming this is the correct name for the segmentation visualization function
-        QMessageBox.information(self, "Visualize Segmentations", "Visualization completed.")
+        QMessageBox.information(self, "Visualize", "Visualization completed.")
 
 # # Dialog for Merge functionality
 class MergeDialog(QDialog):
@@ -346,7 +331,7 @@ class UpdateDialog(QDialog):
 
         # Close the dialog to proceed
         self.accept()
-        
+
 class PostUpdateDialog(QDialog):
     def __init__(self, parent=None):
         super(PostUpdateDialog, self).__init__(parent)
@@ -431,10 +416,36 @@ class PostUpdateDialog(QDialog):
                 return
 
         try:
-            coco_postupdate(new_samples_dir=new_samples_dir, existing_samples_dir=existing_samples_dir, results_path=results_path)
+            train_json, train_img_dir, val_json, val_img_dir = coco_postupdate(
+                new_samples_dir=new_samples_dir, 
+                existing_samples_dir=existing_samples_dir, 
+                results_path=results_path)
             QMessageBox.information(self, "Post-update", "Dataset post-update completed successfully.")
+
+            # Ask the user if they want to visualize data after post-update
+            reply = QMessageBox.question(
+                self, 
+                "Visualize Data", 
+                "Do you want to visualize the updated dataset?", 
+                QMessageBox.Yes | QMessageBox.No, 
+                QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                self.visualize(train_img_dir, train_json) 
+                self.visualize(val_img_dir, val_json)
+                QMessageBox.information(self, "Visualization", "Visualization completed.")
+            else:
+                QMessageBox.information(self, "Visualization", "Visualization skipped.")
+
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed during post-update operation: {str(e)}")
+
+    def visualize(self, img_dir, ann_path):
+        try:
+            coco_visualize(img_dir, ann_path)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to process the annotations file: {str(e)}")
 
 class MainWindow(QMainWindow):
     def __init__(self):
