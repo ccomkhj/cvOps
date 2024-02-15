@@ -223,21 +223,28 @@ class UpdateDialog(QDialog):
         self.newAnnPathLabel = QLabel("New Annotation File: Not Selected")
         layout.addWidget(self.newAnnPathLabel)
 
+        self.imgLocateLabel = QLabel(
+            "New Image Location: Not Selected"
+        )  # Label for selecting image location
+        layout.addWidget(self.imgLocateLabel)
+        
         self.trainAnnPathLabel = QLabel("Train Annotation File: Not Selected")
         layout.addWidget(self.trainAnnPathLabel)
 
         self.valAnnPathLabel = QLabel("Validation Annotation File: Not Selected")
         layout.addWidget(self.valAnnPathLabel)
 
-        self.imgLocateLabel = QLabel(
-            "Image Location: Not Selected"
-        )  # Label for selecting image location
-        layout.addWidget(self.imgLocateLabel)
 
         newAnnPathButton = QPushButton("Select New Annotation File")
         newAnnPathButton.clicked.connect(self.selectNewAnnPath)
         layout.addWidget(newAnnPathButton)
 
+        imgLocateButton = QPushButton("Select New Image Location")
+        imgLocateButton.clicked.connect(
+            self.selectImageLocation
+        )  # Button to select image location
+        layout.addWidget(imgLocateButton)
+        
         trainAnnPathButton = QPushButton("Select Train Annotation File")
         trainAnnPathButton.clicked.connect(self.selectTrainAnnPath)
         layout.addWidget(trainAnnPathButton)
@@ -246,11 +253,6 @@ class UpdateDialog(QDialog):
         valAnnPathButton.clicked.connect(self.selectValAnnPath)
         layout.addWidget(valAnnPathButton)
 
-        imgLocateButton = QPushButton("Select Image Location")
-        imgLocateButton.clicked.connect(
-            self.selectImageLocation
-        )  # Button to select image location
-        layout.addWidget(imgLocateButton)
 
         self.splitRatioLineEdit = QLineEdit("0.8")
         layout.addWidget(QLabel("Split Ratio (New Data Train Size):"))
@@ -284,9 +286,9 @@ class UpdateDialog(QDialog):
             self.valAnnPathLabel.setText(f"Validation Annotation File: {path}")
 
     def selectImageLocation(self):
-        directory = QFileDialog.getExistingDirectory(self, "Select Image Location")
+        directory = QFileDialog.getExistingDirectory(self, "Select New Image Location")
         if directory:
-            self.imgLocateLabel.setText(f"Image Location: {directory}")
+            self.imgLocateLabel.setText(f"New Image Location: {directory}")
 
     def selectNewAnnPath(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -318,7 +320,7 @@ class UpdateDialog(QDialog):
             "Validation Annotation File: ", ""
         )
         split_ratio = float(self.splitRatioLineEdit.text())
-        image_locate = self.imgLocateLabel.text().replace("Image Location: ", "")
+        new_image_locate = self.imgLocateLabel.text().replace("New Image Location: ", "")
 
         if not (
             os.path.exists(new_ann_path)
@@ -334,7 +336,7 @@ class UpdateDialog(QDialog):
                 train_ann_path=train_ann_path,
                 val_ann_path=val_ann_path,
                 split_ratio=split_ratio,
-                image_locate=image_locate,
+                new_image_locate=new_image_locate,
             )
             print("Update complete!")
             QApplication.quit()  # Quit the application
@@ -398,27 +400,42 @@ class PostUpdateDialog(QDialog):
             try:
                 with open("latest_update_configs.yaml", "r") as file:
                     config = yaml.safe_load(file)
+                
+                # Using full paths from the configuration
+                new_samples_dir = os.path.dirname(config.get('new_image_locate', ''))
+                existing_samples_dir = os.path.dirname(config.get('train_ann_path', ''))
+                results_path = os.path.dirname(os.path.dirname(config.get('outcome_train_ann', '')))
 
-                new_samples_dir = config.get('outcome_train_img', '')
-                existing_samples_dir = config.get('existing_samples_dir', '')  # Adjust based on your YAML structure, might need a default value or condition
-                results_path = config.get('outcome_path', '')
+                # Validate paths are valid directories
+                if not (os.path.isdir(new_samples_dir) and os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)):
+                    raise ValueError("One or more directories from the config don't exist.")
+            
+            except FileNotFoundError:
+                QMessageBox.critical(self, "Error", "Configuration file 'latest_update_configs.yaml' not found.")
+                return
+            except ValueError as ve:
+                QMessageBox.critical(self, "Error", str(ve))
+                return
             except Exception as e:
-                QMessageBox.critical(self, "Error", "Failed to read the configuration file.")
+                QMessageBox.critical(self, "Error", f"Failed to read the configuration file: {str(e)}")
                 return
         else:
-            new_samples_dir = self.newSamplesDirLabel.text().split(": ")[1]
-            existing_samples_dir = self.existingSamplesDirLabel.text().split(": ")[1]
-            results_path = self.resultsDirLabel.text().split(": ")[1]
+            # Extract directly provided paths from the dialog's fields
+            new_samples_dir = self.newSamplesDirLabel.text().split(": ")[1].strip()
+            existing_samples_dir = self.existingSamplesDirLabel.text().split(": ")[1].strip()
+            results_path = self.resultsDirLabel.text().split(": ")[1].strip()
 
-        if not (os.path.exists(new_samples_dir) and os.path.exists(existing_samples_dir) and os.path.exists(results_path)):
-            QMessageBox.critical(self, "Error", "Please select valid directories or ensure the configuration file exists and is correct.")
-            return
+            # Direct paths validation
+            if not (os.path.isdir(new_samples_dir) and os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)):
+                QMessageBox.critical(self, "Error", "Please select valid directories.")
+                return
 
-        from cvops.coco_operation import postupdate as coco_postupdate
-        coco_postupdate(new_samples_dir, existing_samples_dir, results_path)
-        QMessageBox.information(self, "Post-update", "Dataset post-update completed successfully.")
-        
-        
+        try:
+            coco_postupdate(new_samples_dir=new_samples_dir, existing_samples_dir=existing_samples_dir, results_path=results_path)
+            QMessageBox.information(self, "Post-update", "Dataset post-update completed successfully.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed during post-update operation: {str(e)}")
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()

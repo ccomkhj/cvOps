@@ -86,6 +86,8 @@ def visualizebox(
     root = tk.Tk()
     root.title("COCO Viewer")
 
+    print("img_dir:", img_dir)
+    print("ann_path:", ann_path)
     data = Data(img_dir, ann_path)
     statusbar = StatusBar(root)
     sliders = SlidersBar(root)
@@ -294,18 +296,19 @@ def update(
     split_ratio: float = typer.Argument(
         default=0.8, help="A ratio of a split; a number in (0, 1)"
     ),
-    image_locate: Optional[str] = typer.Argument(
+    new_image_locate: Optional[str] = typer.Argument(
         default="", help="Locate images based on the split if the value is given."
     ),
 ):
     assert (
-        validate(image_locate, new_ann_path) is True
+        validate(new_image_locate, new_ann_path) is True
     ), "Images in coco and image DIR doesn't match."
     
     
 
     now = int(time.time())
-    outcome_path = f"results/{now}"
+    current_path = os.getcwd()  # Get the current working directory
+    outcome_path = os.path.join(current_path, f"results/{now}")  # Make outcome_path absolute
 
     # Setup paths
     outcome_train_ann = os.path.join(outcome_path, "train", "ann")
@@ -317,34 +320,35 @@ def update(
     config = {
         "time_created": time.ctime(now),
         "new_ann_path": new_ann_path,
+        "new_image_locate": new_image_locate,
         "train_ann_path": train_ann_path,
         "val_ann_path": val_ann_path,
         "split_ratio": split_ratio,
-        "image_locate": image_locate,
         "outcome_train_ann": outcome_train_ann,
-        "outcome_val_ann": outcome_val_ann,
-        "outcome_train_img": outcome_train_img,
-        "outcome_val_img": outcome_val_img
+        "outcome_val_ann": outcome_val_ann
     }
+    
     with open("latest_update_configs.yaml", "w") as file:
         yaml.dump(config, file)
 
     typer.echo("Update configurations saved to latest_update_configs.yaml")
 
-
-
     # Create relevant folders
     os.makedirs(outcome_train_ann, exist_ok=True)
     os.makedirs(outcome_val_ann, exist_ok=True)
+    
+    # place holders to run COCO Assistant successfully. no images will be actually located to run memory efficiently.
     os.makedirs(os.path.join(outcome_train_img, "existing_train"), exist_ok=True)
+    os.makedirs(os.path.join(outcome_train_img, "new_train_images"), exist_ok=True)
     os.makedirs(os.path.join(outcome_val_img, "existing_val"), exist_ok=True)
+    os.makedirs(os.path.join(outcome_val_img, "new_val_images"), exist_ok=True)
 
     split(
         new_ann_path,
         os.path.join(outcome_train_ann, "new_train_images.json"),
         os.path.join(outcome_val_ann, "new_val_images.json"),
         split_ratio,
-        image_locate,
+        new_image_locate,
         multi=False,
     )
 
@@ -355,6 +359,7 @@ def update(
     locate_images(val_ann_path, os.path.join(outcome_val_ann, "existing_val.json"))
 
     # Merge train and val coco json
+    # path of outcome_train/val_img is not effective. just a place holder.
     merge(outcome_train_img, outcome_train_ann)
     merge(outcome_val_img, outcome_val_ann)
 
@@ -459,14 +464,14 @@ def postupdate(
     """
     Combines new and existing image datasets from specified directories and moves corresponding annotations to the processed_result directory.
     """
-    if config_file:
-        with open("latest_update_configs.yaml", "r") as file:
-            config = yaml.safe_load(file)
+    # if config_file:
+    #     with open("latest_update_configs.yaml", "r") as file:
+    #         config = yaml.safe_load(file)
         
-        # Update variables with YAML configurations
-        new_samples_dir = config.get("outcome_train_img", None)
-        existing_samples_dir = "data/detections_2 copy"  # This appears to be static; adjust if it can vary
-        results_path = config.get("outcome_path", None)
+    #     # Update variables with YAML configurations
+    #     new_samples_dir = config.get("new_image_locate", None)
+    #     existing_samples_dir = os.path.dirname(config.get('train_ann_path', None))  # This appears to be static; adjust if it can vary
+    #     results_path = config.get("new_ann_path", None)
     
     if not all([new_samples_dir, existing_samples_dir, results_path]):
         typer.echo("Missing required directories information. Ensure you provide all paths or a valid YAML configuration file.")
@@ -481,7 +486,8 @@ def postupdate(
     new_train_ann_path = os.path.join(results_path, "train/results/merged/annotations/merged.json")
     new_val_ann_path = os.path.join(results_path, "val/results/merged/annotations/merged.json")
 
-    processed_result_dir = "processed_results"
+    now = int(time.time())
+    processed_result_dir = os.path.join("processed_results", str(now))
     processed_train_dir = os.path.join(processed_result_dir, "train_images")
     processed_val_dir = os.path.join(processed_result_dir, "val_images")
 
