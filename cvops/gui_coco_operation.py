@@ -1,5 +1,6 @@
 import sys
 import os
+import yaml
 import atexit
 from PyQt5.QtWidgets import (
     QApplication,
@@ -22,6 +23,7 @@ from PyQt5.QtCore import Qt, QSize
 from coco_assistant import COCO_Assistant
 from pycocotools.coco import COCO
 from cvops.coco_operation import update as coco_update
+from cvops.coco_operation import postupdate as coco_postupdate
 from cvops.coco_operation import split as coco_split
 from cvops.coco_operation import visualize as coco_visualize
 from cvops.coco_operation import visualizebox as coco_visualizebox
@@ -343,6 +345,80 @@ class UpdateDialog(QDialog):
         # Close the dialog to proceed
         self.accept()
         
+class PostUpdateDialog(QDialog):
+    def __init__(self, parent=None):
+        super(PostUpdateDialog, self).__init__(parent)
+        self.setWindowTitle("Post Update COCO Dataset")
+        layout = QVBoxLayout()
+
+        # Checkbox for using the latest update configuration
+        self.useLatestConfigCheckbox = QCheckBox("Use Latest Update Configurations")
+        layout.addWidget(self.useLatestConfigCheckbox)
+        self.useLatestConfigCheckbox.stateChanged.connect(self.toggleDirSelection)
+
+        # Initialization of labels and buttons for directory selection
+        self.newSamplesDirLabel = QLabel("New Samples Directory: Not Selected")
+        self.existingSamplesDirLabel = QLabel("Existing Samples Directory: Not Selected")
+        self.resultsDirLabel = QLabel("Results Directory: Not Selected")
+        
+        self.labelsAndButtons = [
+            (self.newSamplesDirLabel, "Select New Samples Directory"),
+            (self.existingSamplesDirLabel, "Select Existing Samples Directory"),
+            (self.resultsDirLabel, "Select Results Directory"),
+        ]
+        
+        for label, dialogTitle in self.labelsAndButtons:
+            layout.addWidget(label)
+            button = QPushButton(dialogTitle)
+            button.clicked.connect(lambda _, lbl=label, title=dialogTitle: self.selectDirectory(lbl, title))
+            layout.addWidget(button)
+
+        # Button to execute post update
+        postUpdateButton = QPushButton("Post Update Dataset")
+        postUpdateButton.clicked.connect(self.postUpdate)
+        layout.addWidget(postUpdateButton)
+
+        self.setLayout(layout)
+        self.toggleDirSelection(self.useLatestConfigCheckbox.checkState())  # Ensure correct initial state
+
+    def toggleDirSelection(self, state):
+        shouldHide = state == Qt.Checked
+        for label, _ in self.labelsAndButtons:
+            # This loop adjusts visibility based on the checkbox state
+            label.setVisible(not shouldHide)
+            label.nextInFocusChain().setVisible(not shouldHide)  # Adjusts the visibility of the button
+
+    def selectDirectory(self, labelWidget, dialogTitle):
+        directory = QFileDialog.getExistingDirectory(self, dialogTitle)
+        if directory:
+            labelWidget.setText(f"{dialogTitle}: {directory}")
+
+    def postUpdate(self):
+        if self.useLatestConfigCheckbox.isChecked():
+            try:
+                with open("latest_update_configs.yaml", "r") as file:
+                    config = yaml.safe_load(file)
+
+                new_samples_dir = config.get('outcome_train_img', '')
+                existing_samples_dir = config.get('existing_samples_dir', '')  # Adjust based on your YAML structure, might need a default value or condition
+                results_path = config.get('outcome_path', '')
+            except Exception as e:
+                QMessageBox.critical(self, "Error", "Failed to read the configuration file.")
+                return
+        else:
+            new_samples_dir = self.newSamplesDirLabel.text().split(": ")[1]
+            existing_samples_dir = self.existingSamplesDirLabel.text().split(": ")[1]
+            results_path = self.resultsDirLabel.text().split(": ")[1]
+
+        if not (os.path.exists(new_samples_dir) and os.path.exists(existing_samples_dir) and os.path.exists(results_path)):
+            QMessageBox.critical(self, "Error", "Please select valid directories or ensure the configuration file exists and is correct.")
+            return
+
+        from cvops.coco_operation import postupdate as coco_postupdate
+        coco_postupdate(new_samples_dir, existing_samples_dir, results_path)
+        QMessageBox.information(self, "Post-update", "Dataset post-update completed successfully.")
+        
+        
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -372,6 +448,10 @@ class MainWindow(QMainWindow):
 
         self.updateButton = QPushButton("Update")
         self.updateButton.setFixedSize(buttonSize)
+        
+        self.postUpdateButton = QPushButton("Post Update")
+        self.postUpdateButton.setFixedSize(buttonSize)
+        self.postUpdateButton.clicked.connect(self.showPostUpdateDialog)
 
         # Connect buttons to their actions
         self.visualizeButton.clicked.connect(self.showVisualizeDialog)
@@ -390,9 +470,15 @@ class MainWindow(QMainWindow):
         gridLayout.setColumnStretch(1, 1)
         gridLayout.setRowStretch(0, 1)
         gridLayout.setRowStretch(1, 1)
+        
+        gridLayout.addWidget(self.postUpdateButton, 1, 2)  # Adjust position as needed
 
         self.centralWidget.setLayout(gridLayout)
-
+    
+    def showPostUpdateDialog(self):
+        dialog = PostUpdateDialog(self)
+        dialog.exec_()
+        
     # Method implementations for showing the dialogs
     def showVisualizeDialog(self):
         dialog = VisualizeDialog(self)

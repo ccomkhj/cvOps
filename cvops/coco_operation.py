@@ -301,6 +301,8 @@ def update(
     assert (
         validate(image_locate, new_ann_path) is True
     ), "Images in coco and image DIR doesn't match."
+    
+    
 
     now = int(time.time())
     outcome_path = f"results/{now}"
@@ -310,6 +312,26 @@ def update(
     outcome_val_ann = os.path.join(outcome_path, "val", "ann")
     outcome_train_img = os.path.join(outcome_path, "train", "images")
     outcome_val_img = os.path.join(outcome_path, "val", "images")
+
+    # Store the configurations
+    config = {
+        "time_created": time.ctime(now),
+        "new_ann_path": new_ann_path,
+        "train_ann_path": train_ann_path,
+        "val_ann_path": val_ann_path,
+        "split_ratio": split_ratio,
+        "image_locate": image_locate,
+        "outcome_train_ann": outcome_train_ann,
+        "outcome_val_ann": outcome_val_ann,
+        "outcome_train_img": outcome_train_img,
+        "outcome_val_img": outcome_val_img
+    }
+    with open("latest_update_configs.yaml", "w") as file:
+        yaml.dump(config, file)
+
+    typer.echo("Update configurations saved to latest_update_configs.yaml")
+
+
 
     # Create relevant folders
     os.makedirs(outcome_train_ann, exist_ok=True)
@@ -429,48 +451,68 @@ def delete(
 
 @app.command()
 def postupdate(
-    detections_1_path: str = typer.Argument(..., help="Path to detections_1 directory"),
-    detections_2_copy_path: str = typer.Argument(..., help="Path to detections_2 copy directory"),
-    results_path: str = typer.Argument(..., help="Path to results directory containing the merged JSON annotations")
+    config_file: bool = typer.Option(False, "--use-config", help="Use the latest_update_configs.yaml for parameters"),
+    new_samples_dir: str = typer.Option(None, help="Path to new samples directory"),
+    existing_samples_dir: str = typer.Option(None, help="Path to the existing samples directory"),
+    results_path: str = typer.Option(None, help="Path to results directory containing the merged JSON annotations"),
 ):
     """
     Combines new and existing image datasets from specified directories and moves corresponding annotations to the processed_result directory.
     """
-    new_train_images_dir = os.path.join(detections_1_path, "train_images")
-    new_val_images_dir = os.path.join(detections_1_path, "val_images")
-    prev_train_images_dir = os.path.join(detections_2_copy_path, "train_images")
-    prev_val_images_dir = os.path.join(detections_2_copy_path, "val_images")
+    if config_file:
+        with open("latest_update_configs.yaml", "r") as file:
+            config = yaml.safe_load(file)
+        
+        # Update variables with YAML configurations
+        new_samples_dir = config.get("outcome_train_img", None)
+        existing_samples_dir = "data/detections_2 copy"  # This appears to be static; adjust if it can vary
+        results_path = config.get("outcome_path", None)
+    
+    if not all([new_samples_dir, existing_samples_dir, results_path]):
+        typer.echo("Missing required directories information. Ensure you provide all paths or a valid YAML configuration file.")
+        raise typer.Exit(code=1)
+    
+    # Following the original script logic using provided or YAML-specified paths
+    new_train_images_dir = os.path.join(new_samples_dir, "train_images")
+    new_val_images_dir = os.path.join(new_samples_dir, "val_images")
+    prev_train_images_dir = os.path.join(existing_samples_dir, "train_images")
+    prev_val_images_dir = os.path.join(existing_samples_dir, "val_images")
 
     new_train_ann_path = os.path.join(results_path, "train/results/merged/annotations/merged.json")
     new_val_ann_path = os.path.join(results_path, "val/results/merged/annotations/merged.json")
 
-    processed_result_dir = "processed_result"
+    processed_result_dir = "processed_results"
     processed_train_dir = os.path.join(processed_result_dir, "train_images")
     processed_val_dir = os.path.join(processed_result_dir, "val_images")
 
-    # Create directories
+    # Implemented logic remains as original
     os.makedirs(processed_train_dir, exist_ok=True)
     os.makedirs(processed_val_dir, exist_ok=True)
-
+    
     # Function to copy images
     def copy_images(source_dir, dest_dir):
+        # Handling possible non-existent source directory
+        if not os.path.isdir(source_dir):
+            print(f"Source directory not found: {source_dir}")
+            return False
         for filename in os.listdir(source_dir):
             source_path = os.path.join(source_dir, filename)
             dest_path = os.path.join(dest_dir, filename)
             if not os.path.exists(dest_path):
                 shutil.copy(source_path, dest_path)
+        return True
 
     # Copy images from sources to destinations
-    copy_images(new_train_images_dir, processed_train_dir)
-    copy_images(prev_train_images_dir, processed_train_dir)
-    copy_images(new_val_images_dir, processed_val_dir)
-    copy_images(prev_val_images_dir, processed_val_dir)
-
-    # Move annotations
+    if not copy_images(new_train_images_dir, processed_train_dir) or not copy_images(prev_train_images_dir, processed_train_dir) \
+       or not copy_images(new_val_images_dir, processed_val_dir) or not copy_images(prev_val_images_dir, processed_val_dir):
+        typer.echo("One or more errors occurred during image copying.")
+        raise typer.Exit(code=1)
+    
     shutil.copy(new_train_ann_path, os.path.join(processed_result_dir, 'train.json'))
     shutil.copy(new_val_ann_path, os.path.join(processed_result_dir, 'val.json'))
 
     typer.echo("Post-processing completed successfully.")
+    
 @app.command()
 def process(
     config: str = typer.Argument(..., help="Path to category manage config file"),
