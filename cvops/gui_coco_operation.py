@@ -4,8 +4,11 @@ Huijo Kim (huijo@hexafarms.com)
 
 import sys
 import os
-import yaml
+import time
+import datetime
 import atexit
+
+import yaml
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -15,10 +18,12 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QPushButton,
     QLabel,
+    QFileDialog,
     QLineEdit,
     QWidget,
     QCheckBox,
-    QGridLayout
+    QGridLayout,
+    QInputDialog
 )
 from PyQt5.QtCore import Qt, QSize
 
@@ -27,6 +32,7 @@ from cvops.coco_operation import update as coco_update
 from cvops.coco_operation import postupdate as coco_postupdate
 from cvops.coco_operation import split as coco_split
 from cvops.coco_operation import visualize as coco_visualize
+from tools.s3_handler import download_s3_files, upload_s3_files, load_aws_credentials
 
 
 class VisualizeDialog(QDialog):
@@ -525,6 +531,45 @@ class PostUpdateDialog(QDialog):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed during post-update operation: {str(e)}")
+            
+        # Prompt the user for S3 upload
+        upload_reply = QMessageBox.question(
+            self, 
+            "Upload to S3", 
+            "Would you like to upload the results to an AWS S3 bucket?", 
+            QMessageBox.Yes | QMessageBox.No, 
+            QMessageBox.No)
+
+        if upload_reply == QMessageBox.Yes:
+            s3_uri, ok = QInputDialog.getText(self, "S3 URI", "Enter the S3 base URI (e.g., s3://mybucket/myfolder/):")
+            if ok and s3_uri:
+                try:
+                    # Extract bucket name and path from s3_uri
+                    if not s3_uri.startswith("s3://"):
+                        raise ValueError("Invalid S3 URI. Must start with 's3://'.")
+                    
+                    processed_results_path = os.path.dirname(train_json)
+                    # Extract epoch time from the path
+                    epoch_time = processed_results_path.split('/')[-1]
+
+                    # Convert epoch time to a datetime object
+                    time_obj = datetime.datetime.fromtimestamp(int(epoch_time))
+
+                    # Format the datetime object into a human-readable string, e.g., "YYYY-MM-DD_HH-MM-SS"
+                    # You can adjust the formatting to your needs
+                    time_str = time_obj.strftime("%Y-%m-%d_%H-%M-%S")
+                    
+                    bucket_name, s3_key = s3_uri[5:].split('/', 1)
+                    aws_access_key_id, aws_secret_access_key = load_aws_credentials()
+
+                    # Assuming results_path contains the path to the results you want to upload
+                    upload_s3_files(aws_access_key_id, aws_secret_access_key, bucket_name, processed_results_path, s3_key+f"{time_str}")
+
+                    QMessageBox.information(self, "S3 Upload", "Results successfully uploaded to S3.")
+                except ValueError as ve:
+                    QMessageBox.critical(self, "S3 Upload Error", str(ve))
+                except Exception as e:
+                    QMessageBox.critical(self, "S3 Upload Error", f"Failed to upload results to S3: {str(e)}")
 
     def visualize(self, img_dir, ann_path):
         try:
@@ -532,6 +577,150 @@ class PostUpdateDialog(QDialog):
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to process the annotations file: {str(e)}")
+
+class S3UpdateDialog(QDialog):
+    """
+    A dialog window for updating datasets stored on AWS S3 with new images and annotations.
+
+    This dialog facilitates specifying S3 paths for new images and annotations, as well as the existing dataset's S3 base path.
+    It assists in planning how new data can be merged into an existing dataset, considering a specified train-validation split ratio.
+    
+    Attributes:
+        newAnnPathLabel (QLabel): Displays the s3 path of the selected new annotation file.
+        imgLocateLabel (QLabel): Displays the s3 path of the selected new image location.
+        existingPathLabel (QLabel): Displays the s3 path of the project.
+        splitRatioLineEdit (QLineEdit): Entry for specifying new data's train-validation split ratio.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Update S3 Dataset")
+        layout = QVBoxLayout()
+
+        # Initialize labels for displaying selected paths
+        self.newAnnPathLabel = QLabel("New Annotation File (S3 Path): Not Selected")
+        self.imgLocateLabel = QLabel("New Image Location (S3 Path): Not Selected")
+        self.existingPathLabel = QLabel("Existing Dataset S3 Path: Not Specified")
+        self.splitRatioLineEdit = QLineEdit("0.8")  # Default split ratio value
+
+        # Add widgets to layout
+        layout.addWidget(self.newAnnPathLabel)
+        layout.addWidget(self.imgLocateLabel)
+        layout.addWidget(self.existingPathLabel)
+        layout.addWidget(QLabel("Split Ratio (New Data Train Size):"))
+        layout.addWidget(self.splitRatioLineEdit)
+
+        # Buttons for selecting S3 paths
+        selectNewAnnPathButton = QPushButton("Select New Annotation S3 Path")
+        selectImgLocateButton = QPushButton("Select New Image S3 Location")
+        selectExistingPathButton = QPushButton("Select Existing Dataset S3 Path")
+        updateButton = QPushButton("Update S3 Dataset")
+
+        # Connection signals to slots
+        selectNewAnnPathButton.clicked.connect(self.selectNewAnnPath)
+        selectImgLocateButton.clicked.connect(self.selectImageLocation)
+        selectExistingPathButton.clicked.connect(self.selectExistingPath)
+        updateButton.clicked.connect(self.updateDataset)
+
+        # Add buttons to layout
+        layout.addWidget(selectNewAnnPathButton)
+        layout.addWidget(selectImgLocateButton)
+        layout.addWidget(selectExistingPathButton)
+        layout.addWidget(updateButton)
+
+        self.setLayout(layout)
+
+    def selectNewAnnPath(self):
+        # This method would ideally open a dialog to specify or select an S3 path. 
+        # Implement according to how you wish to input or select S3 paths.
+        # For example, you might use a simpler QInputDialog to enter the path manually.
+        path, ok = QInputDialog.getText(self, 'Enter S3 Path', 'New Annotation File S3 Path:')
+        if ok:
+            self.newAnnPathLabel.setText(f"New Annotation File (S3 Path): {path}")
+
+    def selectImageLocation(self):
+        # Similar to selectNewAnnPath; gets S3 path for images.
+        path, ok = QInputDialog.getText(self, 'Enter S3 Path', 'New Image Location S3 Path:')
+        if ok:
+            self.imgLocateLabel.setText(f"New Image Location (S3 Path): {path}")
+
+    def selectExistingPath(self):
+        # User inputs the S3 base path of their existing dataset.
+        path, ok = QInputDialog.getText(self, 'Enter S3 Path', 'Existing Dataset S3 Path:')
+        if ok:
+            self.existingPathLabel.setText(f"Existing Dataset S3 Path: {path}")
+
+    def updateDataset(self):
+        aws_access_key_id, aws_secret_access_key = load_aws_credentials("config/s3_credentials.yaml")
+
+        # Generate a unique directory for this update session based on the current timestamp
+        now = int(time.time())
+        current_path = os.getcwd()  # Get the current working directory
+        outcome_path = os.path.join(current_path, f"downloads_s3/{now}")  # Make outcome_path absolute
+
+        # Prepare directories for new data
+        new_data_path = os.path.join(outcome_path, "new")
+        os.makedirs(new_data_path, exist_ok=True)  # Ensure the new data directory exists
+        
+        new_images_path = os.path.join(new_data_path, "images")  # Specific path for new images
+        new_ann_path = os.path.join(new_data_path, "annotations.json")  # Assuming a single new annotation file
+
+        # New dataset paths (assuming they are received from the Qt dialog)
+        new_ann_s3_path = self.newAnnPathLabel.text().replace("New Annotation File (S3 Path): ", "")
+        new_img_dir_s3_path = self.imgLocateLabel.text().replace("New Image Directory (S3 Path): ", "")
+        new_bucket_name, new_ann_key = new_ann_s3_path.replace("s3://", "").split("/", 1)
+        _, new_img_dir_key = new_img_dir_s3_path.replace("s3://", "").split("/", 1)
+
+        # Adjust download_s3_files function calls to use correct paths
+
+        # Download new annotation file directly to its specific path
+        download_s3_files(
+            aws_access_key_id, 
+            aws_secret_access_key, 
+            new_bucket_name, 
+            new_ann_key,
+            os.path.dirname(new_ann_path)  # Use the parent directory of new_ann_path
+        )
+
+        # Download new images into their specific directory
+        download_s3_files(
+            aws_access_key_id, 
+            aws_secret_access_key, 
+            new_bucket_name, 
+            new_img_dir_key,
+            new_images_path  # Use new_images_path for storing new images
+        )
+
+        new_ann_path = os.path.join(outcome_path, "new", os.path.basename(new_ann_key))  # Path to new annotation file
+        new_image_path = os.path.join(outcome_path, "new/images")  # New images are within this directory
+        
+        # Existing dataset paths (assumed to be provided through the dialog)
+        existing_dataset_s3_path = self.existingPathLabel.text().replace("Existing Dataset S3 Path: ", "")
+        existing_bucket_name, existing_dataset_key = existing_dataset_s3_path.replace("s3://", "").split("/", 1)
+
+        # Directory for existing data within outcome_path
+        existing_data_path = os.path.join(outcome_path, "existing_dataset")
+        os.makedirs(existing_data_path, exist_ok=True)  # Ensure the existing data directory exists
+
+        # Assuming download_s3_files has been adapted to accommodate directory downloads
+        download_s3_files(
+            aws_access_key_id,
+            aws_secret_access_key,
+            existing_bucket_name,
+            existing_dataset_key,
+            existing_data_path  # Download everything into existing_data_path
+        )
+        
+        coco_update(
+            new_ann_path=new_ann_path, 
+            train_ann_path=os.path.join(existing_data_path, "train.json"),
+            val_ann_path=os.path.join(existing_data_path, "val.json"),
+            split_ratio=0.8, 
+            new_image_locate=new_image_path
+        )
+        # MessageBox or logging
+        print("Update Complete", "Dataset has been updated with files from S3.")
+        
+        QMessageBox.information(self, "Update Initiated", "Dataset update process has been initiated.")
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -548,7 +737,7 @@ class MainWindow(QMainWindow):
         gridLayout = QGridLayout()  # Use a grid layout
 
         # Button size
-        buttonSize = QSize(100, 100)  # Adjust size as needed
+        buttonSize = QSize(150, 100)  # Adjust size as needed
 
         # Create buttons for each functionality and set text
         self.visualizeButton = QPushButton("Visualize")
@@ -566,6 +755,11 @@ class MainWindow(QMainWindow):
         self.postUpdateButton = QPushButton("Post Update")
         self.postUpdateButton.setFixedSize(buttonSize)
         self.postUpdateButton.clicked.connect(self.showPostUpdateDialog)
+        
+        # Button for S3 Update
+        self.s3UpdateButton = QPushButton("S3 Update")
+        self.s3UpdateButton.setFixedSize(buttonSize)
+        self.s3UpdateButton.clicked.connect(self.showS3UpdateDialog)
 
         # Connect buttons to their actions
         self.visualizeButton.clicked.connect(self.showVisualizeDialog)
@@ -578,6 +772,7 @@ class MainWindow(QMainWindow):
         gridLayout.addWidget(self.mergeButton, 0, 1)  # Top-right
         gridLayout.addWidget(self.splitButton, 1, 0)  # Bottom-left
         gridLayout.addWidget(self.updateButton, 1, 1)  # Bottom-right
+        gridLayout.addWidget(self.s3UpdateButton, 2, 0)  # Example position
  
         # Enable stretching to push the buttons to the corners
         gridLayout.setColumnStretch(0, 1)
@@ -608,6 +803,10 @@ class MainWindow(QMainWindow):
 
     def showUpdateDialog(self):
         dialog = UpdateDialog(self)
+        dialog.exec_()
+    
+    def showS3UpdateDialog(self):
+        dialog = S3UpdateDialog(self)
         dialog.exec_()
 
     def showVisualizeDialog(self):
