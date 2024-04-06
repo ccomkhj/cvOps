@@ -263,10 +263,10 @@ class ImageList:
 
 
 class ImagePanel(ttk.Frame):
-    """ttk port of original turtle.ScrolledCanvas code."""
-
+    """ttk port of original turtle.ScrolledCanvas with image display capabilities."""
+    
     def __init__(
-        self, parent, width=768 * 2, height=480 * 2, canvwidth=600, canvheight=500
+        self, parent, width=768*2, height=480*2, canvwidth=600*2, canvheight=500*2
     ):
         super().__init__(parent, width=width, height=height)
         self._rootwindow = self.winfo_toplevel()
@@ -275,139 +275,87 @@ class ImagePanel(ttk.Frame):
         self.bg = "gray15"
         self.pack(fill=tk.BOTH, expand=True)
 
+        # Canvas creation
         self._canvas = tk.Canvas(
-            parent,
-            width=width,
-            height=height,
+            self,
+            width=self.width,
+            height=self.height,
             bg=self.bg,
             relief="sunken",
             borderwidth=2,
         )
+
+        # Scrollbar configuration
         self.hscroll = ttk.Scrollbar(
-            parent, command=self._canvas.xview, orient=tk.HORIZONTAL
+            self, command=self._canvas.xview, orient=tk.HORIZONTAL
         )
-        self.vscroll = ttk.Scrollbar(parent, command=self._canvas.yview)
+        self.vscroll = ttk.Scrollbar(
+            self, command=self._canvas.yview
+        )
         self._canvas.configure(
-            xscrollcommand=self.hscroll.set, yscrollcommand=self.vscroll.set
+            xscrollcommand=self.hscroll.set,
+            yscrollcommand=self.vscroll.set
         )
 
-        self.rowconfigure(0, weight=1, minsize=0)
-        self.columnconfigure(0, weight=1, minsize=0)
-        self._canvas.grid(
-            padx=1,
-            in_=self,
-            pady=1,
-            row=0,
-            column=0,
-            rowspan=1,
-            columnspan=1,
-            sticky=tk.NSEW,
-        )
-        self.vscroll.grid(
-            padx=1,
-            in_=self,
-            pady=1,
-            row=0,
-            column=1,
-            rowspan=1,
-            columnspan=1,
-            sticky=tk.NSEW,
-        )
-        self.hscroll.grid(
-            padx=1,
-            in_=self,
-            pady=1,
-            row=1,
-            column=0,
-            rowspan=1,
-            columnspan=1,
-            sticky=tk.NSEW,
-        )
-
+        # Grid configuration
+        self._canvas.grid(row=0, column=0, sticky='nsew')
+        self.hscroll.grid(row=1, column=0, sticky='ew')
+        self.vscroll.grid(row=0, column=1, sticky='ns')
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        
+        self._image_ref = None  # Keep a reference to avoid garbage collection
         self.reset()
         self._rootwindow.bind("<Configure>", self.on_resize)
 
     def reset(self, canvwidth=None, canvheight=None, bg=None):
-        """Adjusts canvas and scrollbars according to given canvas size."""
-        if canvwidth:
-            self.canvwidth = canvwidth
-        if canvheight:
-            self.canvheight = canvheight
-        if bg:
-            self.bg = bg
+        """Adjust canvas and scrollbars according to given parameters or defaults."""
+        self.canvwidth = canvwidth if canvwidth else self.canvwidth
+        self.canvheight = canvheight if canvheight else self.canvheight
+        self.bg = bg if bg else self.bg
+
         self._canvas.config(
-            bg=bg,
+            bg=self.bg,
             scrollregion=(
                 -self.canvwidth // 2,
                 -self.canvheight // 2,
                 self.canvwidth // 2,
-                self.canvheight // 2,
-            ),
+                self.canvheight // 2
+            )
         )
-        self._canvas.xview_moveto(
-            0.5 * (self.canvwidth - self.width + 30) / self.canvwidth
-        )
-        self._canvas.yview_moveto(
-            0.5 * (self.canvheight - self.height + 30) / self.canvheight
-        )
-        self.adjust_scrolls()
+
+        self.load_image()
+
+    def load_image(self, image_path=None):
+        """Load, resize, and display the image."""
+        if image_path:
+            # Assuming PIL is used for image loading and resizing
+            img = Image.open(image_path)
+            # Here you could resize or process your image as needed
+            img_resized = img.resize((self.canvwidth, self.canvheight), Image.ANTIALIAS)
+            self._image_ref = ImageTk.PhotoImage(img_resized)  # Prevent garbage-collection
+            self._canvas.create_image(0, 0, image=self._image_ref, anchor="nw")
 
     def adjust_scrolls(self):
-        """Adjusts scrollbars according to window- and canvas-size."""
+        """Dynamically adjust scrollbar visibility and canvas based on content size."""
         cwidth = self._canvas.winfo_width()
         cheight = self._canvas.winfo_height()
-
         self._canvas.xview_moveto(0.5 * (self.canvwidth - cwidth) / self.canvwidth)
         self._canvas.yview_moveto(0.5 * (self.canvheight - cheight) / self.canvheight)
 
+        # Adjust scrollbar visibility based on content size
         if cwidth < self.canvwidth:
-            self.hscroll.grid(
-                padx=1,
-                in_=self,
-                pady=1,
-                row=1,
-                column=0,
-                rowspan=1,
-                columnspan=1,
-                sticky=tk.NSEW,
-            )
+            self.hscroll.grid()
         else:
-            self.hscroll.grid_forget()
+            self.hscroll.grid_remove()
         if cheight < self.canvheight:
-            self.vscroll.grid(
-                padx=1,
-                in_=self,
-                pady=1,
-                row=0,
-                column=1,
-                rowspan=1,
-                columnspan=1,
-                sticky=tk.NSEW,
-            )
+            self.vscroll.grid()
         else:
-            self.vscroll.grid_forget()
+            self.vscroll.grid_remove()
 
     def on_resize(self, event):
+        """Adjust the scrolls on window resize."""
         self.adjust_scrolls()
-
-    def bbox(self, *args):
-        return self._canvas.bbox(*args)
-
-    def cget(self, *args, **kwargs):
-        return self._canvas.cget(*args, **kwargs)
-
-    def config(self, *args, **kwargs):
-        self._canvas.config(*args, **kwargs)
-
-    def bind(self, *args, **kwargs):
-        self._canvas.bind(*args, **kwargs)
-
-    def unbind(self, *args, **kwargs):
-        self._canvas.unbind(*args, **kwargs)
-
-    def focus_force(self):
-        self._canvas.focus_force()
-
 
 __forwardmethods(ImagePanel, tk.Canvas, "_canvas")
 

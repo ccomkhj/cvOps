@@ -121,6 +121,7 @@ def has_segmentation_data(ann_path: str) -> bool:
         annIds = coco.getAnnIds(imgIds=imgId, catIds=catIds, iscrowd=None)
         anns = coco.loadAnns(annIds)
         for ann in anns:
-            if 'segmentation' in ann and ann['segmentation']:
+            if 'segmentation' in ann and any(ann['segmentation']):
+                # segmentation exists and it's not empty, then return True.
                 return True
     return False
