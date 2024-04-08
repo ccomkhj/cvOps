@@ -48,10 +48,11 @@ aws_access_key_id: {aws_access_key_id}
     - **Merge**: For merging datasets, indicate the image and annotation directories of the datasets to be combined. Specify if the image sets should also be merged.
     - **Split**: Splitting a dataset requires providing an annotation file and image directory, along with specifying the split ratio for training set allocation.
     - **Update**: To run through Merge and Split in one-shot, select new annotations, and specify existing training and validation annotation files along with a new image location. Define the split ratio for new data incorporation.
-    - **S3 Update**: Run every update job by downloading artifacts from S3. You only need to set up S3 URI.
+    - **S3 Update**: Run every update job by downloading artifacts from S3. You only need to set up S3 URI. Tip: Directly click the `Copy S3 URI` from the web interface.
     - **Post Update**: Execute post-update operations by choosing directories for new and existing samples. This ensures the dataset is optimized and organized according to the standard structure post-update. After checking the quality, you have an option to directly upload your updated project into S3.
 
 ![COCO Tools](demo/COCO_Tools.png)
+
 
 
 ## Contributing

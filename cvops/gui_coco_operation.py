@@ -541,7 +541,7 @@ class PostUpdateDialog(QDialog):
             QMessageBox.No)
 
         if upload_reply == QMessageBox.Yes:
-            s3_uri, ok = QInputDialog.getText(self, "S3 URI", "Enter the S3 base URI (e.g., s3://mybucket/myfolder/):")
+            s3_uri, ok = QInputDialog.getText(self, "S3 URI", "Enter the S3 base URI (e.g., s3://hexa-cv-dataset/Fragaria × ananassa/fruit_detection/):")
             if ok and s3_uri:
                 try:
                     # Extract bucket name and path from s3_uri
