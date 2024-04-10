@@ -58,7 +58,16 @@ def visualize(
     ├── ann_path
     [/blue]
     """
-
+    
+    # import fiftyone as fo
+    # dataset = fo.Dataset.from_dir(
+    #     dataset_dir=img_dir,
+    #     dataset_type=fo.types.COCODetectionDataset,
+    #     labels_path=ann,
+    # )
+    # print(dataset)
+    # session = fo.launch_app(dataset)
+    
     if has_segmentation_data(ann):
        cocovis.visualise_all(COCO(ann), img_dir)
 
@@ -192,7 +201,7 @@ def split(
     with open(ann_path, "rt", encoding="UTF-8") as annotations:
         coco = json.load(annotations)
         info = coco["info"]
-        licenses = coco["licenses"]
+        licenses = coco.get("licenses")
         images = coco["images"]
         annotations = coco["annotations"]
         categories = coco["categories"]

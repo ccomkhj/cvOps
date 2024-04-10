@@ -5,4 +5,5 @@ PyQt5
 pyyaml
 pytest
 pytest-mock
-fiftyone
+coco-assistant
+scikit-multilearn

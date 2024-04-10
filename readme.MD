@@ -36,6 +36,11 @@ aws_access_key_id: {aws_access_key_id}
 
 ## Getting Started
 
+0. **Install**: 
+   ```bash
+  pip install -e .
+   ```
+
 1. **Launch**: Activate the COCO Tools GUI by executing the accompanying script.
 
     ```bash
