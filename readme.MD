@@ -37,9 +37,10 @@ aws_access_key_id: {aws_access_key_id}
 ## Getting Started
 
 0. **Install**: 
-   ```bash
+  ```bash
   pip install -e .
-   ```
+  pip install git+https://github.com/ccomkhj/COCO-Assistant.git@master
+  ```
 
 1. **Launch**: Activate the COCO Tools GUI by executing the accompanying script.
 
@@ -55,6 +56,8 @@ aws_access_key_id: {aws_access_key_id}
     - **Update**: To run through Merge and Split in one-shot, select new annotations, and specify existing training and validation annotation files along with a new image location. Define the split ratio for new data incorporation.
     - **S3 Update**: Run every update job by downloading artifacts from S3. You only need to set up S3 URI. Tip: Directly click the `Copy S3 URI` from the web interface.
     - **Post Update**: Execute post-update operations by choosing directories for new and existing samples. This ensures the dataset is optimized and organized according to the standard structure post-update. After checking the quality, you have an option to directly upload your updated project into S3.
+
+    [Note] Even if you run S3 Update, still need to take Post Update.
 
 ![COCO Tools](demo/COCO_Tools.png)
 
