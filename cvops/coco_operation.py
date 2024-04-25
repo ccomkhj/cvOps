@@ -22,7 +22,7 @@ from tools.helpers import (
     locate_images,
     save_coco,
     get_image_files,
-    has_segmentation_data
+    has_segmentation_data,
 )
 
 import tkinter as tk
@@ -58,22 +58,38 @@ def visualize(
     ├── ann_path
     [/blue]
     """
-    
-    # import fiftyone as fo
-    # dataset = fo.Dataset.from_dir(
-    #     dataset_dir=img_dir,
-    #     dataset_type=fo.types.COCODetectionDataset,
-    #     labels_path=ann,
-    # )
-    # print(dataset)
-    # session = fo.launch_app(dataset)
-    
-    if has_segmentation_data(ann):
-       cocovis.visualise_all(COCO(ann), img_dir)
 
-    else:
-        print("No segmentation found in annotation, so draw bboxes.")
-        visualizebox(img_dir, ann)
+    try:
+        import fiftyone as fo
+
+        dataset = fo.Dataset.from_dir(
+            dataset_dir=img_dir,
+            dataset_type=fo.types.COCODetectionDataset,
+            labels_path=ann,
+        )
+        print(dataset)
+        session = fo.launch_app(dataset)
+
+        # Keep running the session until explicitly stopped
+        while True:
+            try:
+                # Your main script logic goes here
+                pass
+            except KeyboardInterrupt:
+                # Handle KeyboardInterrupt (Ctrl+C) to gracefully exit the loop
+                print("Exiting the loop...")
+                break
+
+        # Close the session when done
+        session.close()
+    except:
+        print("fiftyone failed to lunch. use pyqt based visualizer.")
+        if has_segmentation_data(ann):
+            cocovis.visualise_all(COCO(ann), img_dir)
+
+        else:
+            print("No segmentation found in annotation, so draw bboxes.")
+            visualizebox(img_dir, ann)
 
 
 @app.command()
@@ -257,7 +273,7 @@ def split(
 
         else:
 
-            X_train, X_test = train_test_split(images, train_size=split, shuffle= True)
+            X_train, X_test = train_test_split(images, train_size=split, shuffle=True)
 
             anns_train = filter_annotations(annotations, X_train)
             anns_test = filter_annotations(annotations, X_test)
@@ -275,9 +291,7 @@ def split(
 
         # Create folder of images next to train and test file
         parent_train_dir = os.path.dirname(os.path.dirname(train_path))
-        destDir_train = os.path.join(
-            parent_train_dir, "images", "new_train_images"
-        )
+        destDir_train = os.path.join(parent_train_dir, "images", "new_train_images")
         os.makedirs(destDir_train, exist_ok=True)
 
         # Iterate the dictionary and send it to source and destination.
@@ -318,12 +332,12 @@ def update(
     assert (
         validate(new_image_locate, new_ann_path) is True
     ), "Images in coco and image DIR doesn't match."
-    
-    
 
     now = int(time.time())
     current_path = os.getcwd()  # Get the current working directory
-    outcome_path = os.path.join(current_path, f"results/{now}")  # Make outcome_path absolute
+    outcome_path = os.path.join(
+        current_path, f"results/{now}"
+    )  # Make outcome_path absolute
 
     # Setup paths
     outcome_train_ann = os.path.join(outcome_path, "train", "ann")
@@ -340,9 +354,9 @@ def update(
         "val_ann_path": val_ann_path,
         "split_ratio": split_ratio,
         "outcome_train_ann": outcome_train_ann,
-        "outcome_val_ann": outcome_val_ann
+        "outcome_val_ann": outcome_val_ann,
     }
-    
+
     with open("latest_update_configs.yaml", "w") as file:
         yaml.dump(config, file)
 
@@ -351,7 +365,7 @@ def update(
     # Create relevant folders
     os.makedirs(outcome_train_ann, exist_ok=True)
     os.makedirs(outcome_val_ann, exist_ok=True)
-    
+
     # place holders to run COCO Assistant successfully. no images will be actually located to run memory efficiently.
     os.makedirs(os.path.join(outcome_train_img, "existing_train"), exist_ok=True)
     os.makedirs(os.path.join(outcome_train_img, "new_train_images"), exist_ok=True)
@@ -469,28 +483,41 @@ def delete(
 
     print("Successfully deleted the desired categories.")
 
+
 @app.command()
 def postupdate(
-    config_file: bool = typer.Option(False, "--use-config", help="Use the latest_update_configs.yaml for parameters"),
-    existing_samples_dir: str = typer.Option(None, help="Path to the existing samples directory"),
-    results_path: str = typer.Option(None, help="Path to results directory containing the merged JSON annotations"),
+    config_file: bool = typer.Option(
+        False, "--use-config", help="Use the latest_update_configs.yaml for parameters"
+    ),
+    existing_samples_dir: str = typer.Option(
+        None, help="Path to the existing samples directory"
+    ),
+    results_path: str = typer.Option(
+        None, help="Path to results directory containing the merged JSON annotations"
+    ),
 ):
     """
     Combines new and existing image datasets from specified directories and moves corresponding annotations to the processed_result directory.
     """
-    
+
     if not all([existing_samples_dir, results_path]):
-        typer.echo("Missing required directories information. Ensure you provide all paths or a valid YAML configuration file.")
+        typer.echo(
+            "Missing required directories information. Ensure you provide all paths or a valid YAML configuration file."
+        )
         raise typer.Exit(code=1)
-    
+
     # Following the original script logic using provided or YAML-specified paths
     new_train_images_dir = os.path.join(results_path, "train/images/new_train_images")
     new_val_images_dir = os.path.join(results_path, "val/images/new_val_images")
     prev_train_images_dir = os.path.join(existing_samples_dir, "train_images")
     prev_val_images_dir = os.path.join(existing_samples_dir, "val_images")
 
-    new_train_ann_path = os.path.join(results_path, "train/results/merged/annotations/merged.json")
-    new_val_ann_path = os.path.join(results_path, "val/results/merged/annotations/merged.json")
+    new_train_ann_path = os.path.join(
+        results_path, "train/results/merged/annotations/merged.json"
+    )
+    new_val_ann_path = os.path.join(
+        results_path, "val/results/merged/annotations/merged.json"
+    )
 
     now = int(time.time())
     processed_result_dir = os.path.join("processed_results", str(now))
@@ -500,7 +527,7 @@ def postupdate(
     # Implemented logic remains as original
     os.makedirs(processed_train_dir, exist_ok=True)
     os.makedirs(processed_val_dir, exist_ok=True)
-    
+
     # Function to copy images
     def copy_images(source_dir, dest_dir):
         # Handling possible non-existent source directory
@@ -515,18 +542,28 @@ def postupdate(
         return True
 
     # Copy images from sources to destinations
-    if not copy_images(new_train_images_dir, processed_train_dir) or not copy_images(prev_train_images_dir, processed_train_dir) \
-       or not copy_images(new_val_images_dir, processed_val_dir) or not copy_images(prev_val_images_dir, processed_val_dir):
+    if (
+        not copy_images(new_train_images_dir, processed_train_dir)
+        or not copy_images(prev_train_images_dir, processed_train_dir)
+        or not copy_images(new_val_images_dir, processed_val_dir)
+        or not copy_images(prev_val_images_dir, processed_val_dir)
+    ):
         typer.echo("One or more errors occurred during image copying.")
         raise typer.Exit(code=1)
-    
-    shutil.copy(new_train_ann_path, os.path.join(processed_result_dir, 'train.json'))
-    shutil.copy(new_val_ann_path, os.path.join(processed_result_dir, 'val.json'))
+
+    shutil.copy(new_train_ann_path, os.path.join(processed_result_dir, "train.json"))
+    shutil.copy(new_val_ann_path, os.path.join(processed_result_dir, "val.json"))
 
     typer.echo("Post-processing completed successfully.")
-    
-    return os.path.join(processed_result_dir, 'train.json'), processed_train_dir, os.path.join(processed_result_dir, 'val.json'), processed_val_dir
-    
+
+    return (
+        os.path.join(processed_result_dir, "train.json"),
+        processed_train_dir,
+        os.path.join(processed_result_dir, "val.json"),
+        processed_val_dir,
+    )
+
+
 @app.command()
 def process(
     config: str = typer.Argument(..., help="Path to category manage config file"),
@@ -582,18 +619,18 @@ def replaceimgformat(
     format: str = typer.Argument(..., help="Desired img format you want to replace"),
 ):
     """
-    This function opens a provided COCO JSON annotation file, changes the format of the image filenames 
+    This function opens a provided COCO JSON annotation file, changes the format of the image filenames
     included in the 'images' key of the JSON. The new format is based on the format argument provided
-    by the user. Once changes are made, it saves the Python object back as a JSON file. 
+    by the user. Once changes are made, it saves the Python object back as a JSON file.
 
-    If the annotation file does not exist at the specified path, a printed message will indicate so. 
+    If the annotation file does not exist at the specified path, a printed message will indicate so.
 
     Parameters:
-    annotation (str): The path to a .json file containing COCO format annotations. 
-    format (str): The desired image format to replace the current image format in the annotation file. 
+    annotation (str): The path to a .json file containing COCO format annotations.
+    format (str): The desired image format to replace the current image format in the annotation file.
 
     Returns:
-    None. The function operates in-place on the provided JSON file. 
+    None. The function operates in-place on the provided JSON file.
     """
     if os.path.isfile(annotation):
         with open(annotation, "r") as file:
@@ -609,7 +646,6 @@ def replaceimgformat(
 
     else:
         print(f"{annotation} does not exist.")
-
 
 
 if __name__ == "__main__":
