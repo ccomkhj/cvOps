@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     QCheckBox,
     QGridLayout,
-    QInputDialog
+    QInputDialog,
 )
 from PyQt5.QtCore import Qt, QSize
 
@@ -33,6 +33,7 @@ from cvops.coco_operation import postupdate as coco_postupdate
 from cvops.coco_operation import split as coco_split
 from cvops.coco_operation import visualize as coco_visualize
 from tools.s3_handler import download_s3_files, upload_s3_files, load_aws_credentials
+from pycocotools.coco import COCO
 
 
 class VisualizeDialog(QDialog):
@@ -52,6 +53,7 @@ class VisualizeDialog(QDialog):
         selectAnnPath(): Opens a file dialog to select the annotation file.
         visualize(): Validates selected paths and initiates the visualization process.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Visualize")
@@ -83,8 +85,10 @@ class VisualizeDialog(QDialog):
         if directory:
             self.imgDirLabel.setText(f"Image Directory: {directory}")
 
-    def selectAnnPath(self): 
-        annPath, _ = QFileDialog.getOpenFileName(self, "Select Annotation File", filter="JSON files (*.json)")
+    def selectAnnPath(self):
+        annPath, _ = QFileDialog.getOpenFileName(
+            self, "Select Annotation File", filter="JSON files (*.json)"
+        )
         if annPath:
             self.annPathLabel.setText(f"Annotation File: {annPath}")
 
@@ -92,19 +96,26 @@ class VisualizeDialog(QDialog):
         img_dir = self.imgDirLabel.text().replace("Image Directory: ", "")
         ann_path = self.annPathLabel.text().replace("Annotation File: ", "")
         if not os.path.exists(img_dir) or not os.path.exists(ann_path):
-            QMessageBox.critical(self, "Error", "Please select valid image directory and annotation file.")
+            QMessageBox.critical(
+                self,
+                "Error",
+                "Please select valid image directory and annotation file.",
+            )
             return
-        coco_visualize(img_dir, ann_path)  # Assuming this is the correct name for the segmentation visualization function
+        coco_visualize(
+            img_dir, ann_path
+        )  # Assuming this is the correct name for the segmentation visualization function
         QMessageBox.information(self, "Visualize", "Visualization completed.")
+
 
 class MergeDialog(QDialog):
     """
     A dialog window for merging multiple COCO datasets into a single dataset.
 
     The dialog facilitates the merging process by allowing users to select directories
-    for the images and annotations of the datasets they wish to merge. Users can 
+    for the images and annotations of the datasets they wish to merge. Users can
     optionally choose to merge the images as well. This feature is particularly useful
-    for tasks that involve consolidating datasets from different sources to create a 
+    for tasks that involve consolidating datasets from different sources to create a
     larger, comprehensive dataset for training or evaluation purposes.
 
     Attributes:
@@ -117,6 +128,7 @@ class MergeDialog(QDialog):
         selectAnnDir(): Opens a file dialog to select the directory containing the annotation files to be merged.
         merge(): Validates selected directories and initiates the merging process.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Merge COCO Datasets")
@@ -167,7 +179,24 @@ class MergeDialog(QDialog):
 
         cas = COCO_Assistant(img_dir, ann_dir)
         cas.merge()
-        QMessageBox.information(self, "Merge", "Datasets merged successfully.")
+        print("update merged.json into right format.")
+        merged_coco_path = os.path.join(
+            os.path.dirname(ann_dir), "results", "merged", "annotations", "merged.json"
+        )
+        try:
+            coco_file = COCO(merged_coco_path)
+            # Iterate over annotation IDs
+            for ann_id in coco_file.anns:
+                ann = coco_file.anns[ann_id]
+                # Check if the 'segmentation' key exists and if it's empty
+                if "segmentation" in ann and ann["segmentation"] == [[]]:
+                    # Replace empty segmentation with an empty list
+                    ann["segmentation"] = []
+
+            # Now coco_file.anns should have empty segmentations replaced with []
+            QMessageBox.information(self, "Merge", "Datasets merged successfully.")
+        except TypeError:
+            QMessageBox.information(self, "Merge", "Datasets merge fail!")
 
 
 class SplitDialog(QDialog):
@@ -189,18 +218,23 @@ class SplitDialog(QDialog):
         selectAnnPath(): Opens a dialog to select the annotation file corresponding to the dataset.
         split(): Validates inputs and initiates the dataset splitting process based on the specified ratio.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Split COCO Dataset")
         layout = QVBoxLayout()
 
-        self.imgDirLabel = QLabel("Image Directory: Not Selected")  # Label for image directory
+        self.imgDirLabel = QLabel(
+            "Image Directory: Not Selected"
+        )  # Label for image directory
         layout.addWidget(self.imgDirLabel)
 
         self.annPathLabel = QLabel("Annotation File: Not Selected")
         layout.addWidget(self.annPathLabel)
 
-        imgDirButton = QPushButton("Select Image Directory")  # Button for selecting the image directory
+        imgDirButton = QPushButton(
+            "Select Image Directory"
+        )  # Button for selecting the image directory
         imgDirButton.clicked.connect(self.selectImgDir)
         layout.addWidget(imgDirButton)
 
@@ -231,13 +265,17 @@ class SplitDialog(QDialog):
             self.annPathLabel.setText(f"Annotation File: {path}")
 
     def split(self):
-        img_dir = self.imgDirLabel.text().replace("Image Directory: ", "")  # Getting image directory for splitting
+        img_dir = self.imgDirLabel.text().replace(
+            "Image Directory: ", ""
+        )  # Getting image directory for splitting
         ann_path = self.annPathLabel.text().replace("Annotation File: ", "")
         split_ratio = float(self.splitRatioLineEdit.text())
 
         if not os.path.exists(img_dir) or not os.path.exists(ann_path):
             QMessageBox.critical(
-                self, "Error", "Please select a valid image directory and annotation file."
+                self,
+                "Error",
+                "Please select a valid image directory and annotation file.",
             )
             return
 
@@ -254,6 +292,7 @@ class SplitDialog(QDialog):
             multi=False,
         )
         QMessageBox.information(self, "Split", "Dataset split successfully.")
+
 
 class UpdateDialog(QDialog):
     """
@@ -278,6 +317,7 @@ class UpdateDialog(QDialog):
         selectValAnnPath(): Opens a dialog to select the existing validation annotations file.
         update(): Validates inputs and initiates the dataset updating process based on the specified inputs and ratio.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Update COCO Dataset")
@@ -290,13 +330,12 @@ class UpdateDialog(QDialog):
             "New Image Location: Not Selected"
         )  # Label for selecting image location
         layout.addWidget(self.imgLocateLabel)
-        
+
         self.trainAnnPathLabel = QLabel("Train Annotation File: Not Selected")
         layout.addWidget(self.trainAnnPathLabel)
 
         self.valAnnPathLabel = QLabel("Validation Annotation File: Not Selected")
         layout.addWidget(self.valAnnPathLabel)
-
 
         newAnnPathButton = QPushButton("Select New Annotation File")
         newAnnPathButton.clicked.connect(self.selectNewAnnPath)
@@ -307,7 +346,7 @@ class UpdateDialog(QDialog):
             self.selectImageLocation
         )  # Button to select image location
         layout.addWidget(imgLocateButton)
-        
+
         trainAnnPathButton = QPushButton("Select Train Annotation File")
         trainAnnPathButton.clicked.connect(self.selectTrainAnnPath)
         layout.addWidget(trainAnnPathButton)
@@ -315,7 +354,6 @@ class UpdateDialog(QDialog):
         valAnnPathButton = QPushButton("Select Validation Annotation File")
         valAnnPathButton.clicked.connect(self.selectValAnnPath)
         layout.addWidget(valAnnPathButton)
-
 
         self.splitRatioLineEdit = QLineEdit("0.8")
         layout.addWidget(QLabel("Split Ratio (New Data Train Size):"))
@@ -383,7 +421,9 @@ class UpdateDialog(QDialog):
             "Validation Annotation File: ", ""
         )
         split_ratio = float(self.splitRatioLineEdit.text())
-        new_image_locate = self.imgLocateLabel.text().replace("New Image Location: ", "")
+        new_image_locate = self.imgLocateLabel.text().replace(
+            "New Image Location: ", ""
+        )
 
         if not (
             os.path.exists(new_ann_path)
@@ -410,6 +450,7 @@ class UpdateDialog(QDialog):
         # Close the dialog to proceed
         self.accept()
 
+
 class PostUpdateDialog(QDialog):
     """
     A dialog window for performing post-update operations on COCO datasets.
@@ -428,6 +469,7 @@ class PostUpdateDialog(QDialog):
         selectDirectory(labelWidget, dialogTitle): Opens a dialog to select directories for new samples, existing samples, or results.
         postUpdate(): Initiates the post-update operation based on the selected directories and configurations.
     """
+
     def __init__(self, parent=None):
         super(PostUpdateDialog, self).__init__(parent)
         self.setWindowTitle("Post Update COCO Dataset")
@@ -440,19 +482,23 @@ class PostUpdateDialog(QDialog):
 
         # Initialization of labels and buttons for directory selection
         self.newSamplesDirLabel = QLabel("New Samples Directory: Not Selected")
-        self.existingSamplesDirLabel = QLabel("Existing Samples Directory: Not Selected")
+        self.existingSamplesDirLabel = QLabel(
+            "Existing Samples Directory: Not Selected"
+        )
         self.resultsDirLabel = QLabel("Results Directory: Not Selected")
-        
+
         self.labelsAndButtons = [
             (self.newSamplesDirLabel, "Select New Samples Directory"),
             (self.existingSamplesDirLabel, "Select Existing Samples Directory"),
             (self.resultsDirLabel, "Select Results Directory"),
         ]
-        
+
         for label, dialogTitle in self.labelsAndButtons:
             layout.addWidget(label)
             button = QPushButton(dialogTitle)
-            button.clicked.connect(lambda _, lbl=label, title=dialogTitle: self.selectDirectory(lbl, title))
+            button.clicked.connect(
+                lambda _, lbl=label, title=dialogTitle: self.selectDirectory(lbl, title)
+            )
             layout.addWidget(button)
 
         # Button to execute post update
@@ -461,14 +507,18 @@ class PostUpdateDialog(QDialog):
         layout.addWidget(postUpdateButton)
 
         self.setLayout(layout)
-        self.toggleDirSelection(self.useLatestConfigCheckbox.checkState())  # Ensure correct initial state
+        self.toggleDirSelection(
+            self.useLatestConfigCheckbox.checkState()
+        )  # Ensure correct initial state
 
     def toggleDirSelection(self, state):
         shouldHide = state == Qt.Checked
         for label, _ in self.labelsAndButtons:
             # This loop adjusts visibility based on the checkbox state
             label.setVisible(not shouldHide)
-            label.nextInFocusChain().setVisible(not shouldHide)  # Adjusts the visibility of the button
+            label.nextInFocusChain().setVisible(
+                not shouldHide
+            )  # Adjusts the visibility of the button
 
     def selectDirectory(self, labelWidget, dialogTitle):
         directory = QFileDialog.getExistingDirectory(self, dialogTitle)
@@ -480,77 +530,105 @@ class PostUpdateDialog(QDialog):
             try:
                 with open("latest_update_configs.yaml", "r") as file:
                     config = yaml.safe_load(file)
-                
+
                 # Using full paths from the configuration
-                existing_samples_dir = os.path.dirname(config.get('train_ann_path', ''))
-                results_path = os.path.dirname(os.path.dirname(config.get('outcome_train_ann', '')))
+                existing_samples_dir = os.path.dirname(config.get("train_ann_path", ""))
+                results_path = os.path.dirname(
+                    os.path.dirname(config.get("outcome_train_ann", ""))
+                )
 
                 # Validate paths are valid directories
-                if not (os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)):
-                    raise ValueError("One or more directories from the config don't exist.")
-            
+                if not (
+                    os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)
+                ):
+                    raise ValueError(
+                        "One or more directories from the config don't exist."
+                    )
+
             except FileNotFoundError:
-                QMessageBox.critical(self, "Error", "Configuration file 'latest_update_configs.yaml' not found.")
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    "Configuration file 'latest_update_configs.yaml' not found.",
+                )
                 return
             except ValueError as ve:
                 QMessageBox.critical(self, "Error", str(ve))
                 return
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to read the configuration file: {str(e)}")
+                QMessageBox.critical(
+                    self, "Error", f"Failed to read the configuration file: {str(e)}"
+                )
                 return
         else:
             # Extract directly provided paths from the dialog's fields
-            existing_samples_dir = self.existingSamplesDirLabel.text().split(": ")[1].strip()
+            existing_samples_dir = (
+                self.existingSamplesDirLabel.text().split(": ")[1].strip()
+            )
             results_path = self.resultsDirLabel.text().split(": ")[1].strip()
 
             # Direct paths validation
-            if not (os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)):
+            if not (
+                os.path.isdir(existing_samples_dir) and os.path.isdir(results_path)
+            ):
                 QMessageBox.critical(self, "Error", "Please select valid directories.")
                 return
 
         try:
             train_json, train_img_dir, val_json, val_img_dir = coco_postupdate(
-                existing_samples_dir=existing_samples_dir, 
-                results_path=results_path)
-            QMessageBox.information(self, "Post-update", "Dataset post-update completed successfully.")
+                existing_samples_dir=existing_samples_dir, results_path=results_path
+            )
+            QMessageBox.information(
+                self, "Post-update", "Dataset post-update completed successfully."
+            )
 
             # Ask the user if they want to visualize data after post-update
             reply = QMessageBox.question(
-                self, 
-                "Visualize Data", 
-                "Do you want to visualize the updated dataset?", 
-                QMessageBox.Yes | QMessageBox.No, 
-                QMessageBox.No)
+                self,
+                "Visualize Data",
+                "Do you want to visualize the updated dataset?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
 
             if reply == QMessageBox.Yes:
-                self.visualize(train_img_dir, train_json) 
+                self.visualize(train_img_dir, train_json)
                 self.visualize(val_img_dir, val_json)
-                QMessageBox.information(self, "Visualization", "Visualization completed.")
+                QMessageBox.information(
+                    self, "Visualization", "Visualization completed."
+                )
             else:
                 QMessageBox.information(self, "Visualization", "Visualization skipped.")
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed during post-update operation: {str(e)}")
-            
+            QMessageBox.critical(
+                self, "Error", f"Failed during post-update operation: {str(e)}"
+            )
+
         # Prompt the user for S3 upload
         upload_reply = QMessageBox.question(
-            self, 
-            "Upload to S3", 
-            "Would you like to upload the results to an AWS S3 bucket?", 
-            QMessageBox.Yes | QMessageBox.No, 
-            QMessageBox.No)
+            self,
+            "Upload to S3",
+            "Would you like to upload the results to an AWS S3 bucket?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
 
         if upload_reply == QMessageBox.Yes:
-            s3_uri, ok = QInputDialog.getText(self, "S3 URI", "Enter the S3 base URI (e.g., s3://hexa-cv-dataset/Fragaria × ananassa/fruit_detection/):")
+            s3_uri, ok = QInputDialog.getText(
+                self,
+                "S3 URI",
+                "Enter the S3 base URI (e.g., s3://hexa-cv-dataset/Fragaria × ananassa/fruit_detection/):",
+            )
             if ok and s3_uri:
                 try:
                     # Extract bucket name and path from s3_uri
                     if not s3_uri.startswith("s3://"):
                         raise ValueError("Invalid S3 URI. Must start with 's3://'.")
-                    
+
                     processed_results_path = os.path.dirname(train_json)
                     # Extract epoch time from the path
-                    epoch_time = processed_results_path.split('/')[-1]
+                    epoch_time = processed_results_path.split("/")[-1]
 
                     # Convert epoch time to a datetime object
                     time_obj = datetime.datetime.fromtimestamp(int(epoch_time))
@@ -558,25 +636,40 @@ class PostUpdateDialog(QDialog):
                     # Format the datetime object into a human-readable string, e.g., "YYYY-MM-DD_HH-MM-SS"
                     # You can adjust the formatting to your needs
                     time_str = time_obj.strftime("%Y-%m-%d_%H-%M-%S")
-                    
-                    bucket_name, s3_key = s3_uri[5:].split('/', 1)
+
+                    bucket_name, s3_key = s3_uri[5:].split("/", 1)
                     aws_access_key_id, aws_secret_access_key = load_aws_credentials()
 
                     # Assuming results_path contains the path to the results you want to upload
-                    upload_s3_files(aws_access_key_id, aws_secret_access_key, bucket_name, processed_results_path, s3_key+f"{time_str}")
+                    upload_s3_files(
+                        aws_access_key_id,
+                        aws_secret_access_key,
+                        bucket_name,
+                        processed_results_path,
+                        s3_key + f"{time_str}",
+                    )
 
-                    QMessageBox.information(self, "S3 Upload", "Results successfully uploaded to S3.")
+                    QMessageBox.information(
+                        self, "S3 Upload", "Results successfully uploaded to S3."
+                    )
                 except ValueError as ve:
                     QMessageBox.critical(self, "S3 Upload Error", str(ve))
                 except Exception as e:
-                    QMessageBox.critical(self, "S3 Upload Error", f"Failed to upload results to S3: {str(e)}")
+                    QMessageBox.critical(
+                        self,
+                        "S3 Upload Error",
+                        f"Failed to upload results to S3: {str(e)}",
+                    )
 
     def visualize(self, img_dir, ann_path):
         try:
             coco_visualize(img_dir, ann_path)
-            
+
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to process the annotations file: {str(e)}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to process the annotations file: {str(e)}"
+            )
+
 
 class S3UpdateDialog(QDialog):
     """
@@ -584,13 +677,14 @@ class S3UpdateDialog(QDialog):
 
     This dialog facilitates specifying S3 paths for new images and annotations, as well as the existing dataset's S3 base path.
     It assists in planning how new data can be merged into an existing dataset, considering a specified train-validation split ratio.
-    
+
     Attributes:
         newAnnPathLabel (QLabel): Displays the s3 path of the selected new annotation file.
         imgLocateLabel (QLabel): Displays the s3 path of the selected new image location.
         existingPathLabel (QLabel): Displays the s3 path of the project.
         splitRatioLineEdit (QLineEdit): Entry for specifying new data's train-validation split ratio.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Update S3 Dataset")
@@ -630,76 +724,108 @@ class S3UpdateDialog(QDialog):
         self.setLayout(layout)
 
     def selectNewAnnPath(self):
-        # This method would ideally open a dialog to specify or select an S3 path. 
+        # This method would ideally open a dialog to specify or select an S3 path.
         # Implement according to how you wish to input or select S3 paths.
         # For example, you might use a simpler QInputDialog to enter the path manually.
-        path, ok = QInputDialog.getText(self, 'Enter S3 Path', 'New Annotation File S3 Path:')
+        path, ok = QInputDialog.getText(
+            self, "Enter S3 Path", "New Annotation File S3 Path:"
+        )
         if ok:
             self.newAnnPathLabel.setText(f"New Annotation File (S3 Path): {path}")
 
     def selectImageLocation(self):
         # Similar to selectNewAnnPath; gets S3 path for images.
-        path, ok = QInputDialog.getText(self, 'Enter S3 Path', 'New Image Location S3 Path:')
+        path, ok = QInputDialog.getText(
+            self, "Enter S3 Path", "New Image Location S3 Path:"
+        )
         if ok:
             self.imgLocateLabel.setText(f"New Image Location (S3 Path): {path}")
 
     def selectExistingPath(self):
         # User inputs the S3 base path of their existing dataset.
-        path, ok = QInputDialog.getText(self, 'Enter S3 Path', 'Existing Dataset S3 Path:')
+        path, ok = QInputDialog.getText(
+            self, "Enter S3 Path", "Existing Dataset S3 Path:"
+        )
         if ok:
             self.existingPathLabel.setText(f"Existing Dataset S3 Path: {path}")
 
     def updateDataset(self):
-        aws_access_key_id, aws_secret_access_key = load_aws_credentials("config/s3_credentials.yaml")
+        aws_access_key_id, aws_secret_access_key = load_aws_credentials(
+            "config/s3_credentials.yaml"
+        )
 
         # Generate a unique directory for this update session based on the current timestamp
         now = int(time.time())
         current_path = os.getcwd()  # Get the current working directory
-        outcome_path = os.path.join(current_path, f"downloads_s3/{now}")  # Make outcome_path absolute
+        outcome_path = os.path.join(
+            current_path, f"downloads_s3/{now}"
+        )  # Make outcome_path absolute
 
         # Prepare directories for new data
         new_data_path = os.path.join(outcome_path, "new")
-        os.makedirs(new_data_path, exist_ok=True)  # Ensure the new data directory exists
-        
-        new_images_path = os.path.join(new_data_path, "images")  # Specific path for new images
-        new_ann_path = os.path.join(new_data_path, "annotations.json")  # Assuming a single new annotation file
+        os.makedirs(
+            new_data_path, exist_ok=True
+        )  # Ensure the new data directory exists
+
+        new_images_path = os.path.join(
+            new_data_path, "images"
+        )  # Specific path for new images
+        new_ann_path = os.path.join(
+            new_data_path, "annotations.json"
+        )  # Assuming a single new annotation file
 
         # New dataset paths (assuming they are received from the Qt dialog)
-        new_ann_s3_path = self.newAnnPathLabel.text().replace("New Annotation File (S3 Path): ", "")
-        new_img_dir_s3_path = self.imgLocateLabel.text().replace("New Image Directory (S3 Path): ", "")
-        new_bucket_name, new_ann_key = new_ann_s3_path.replace("s3://", "").split("/", 1)
+        new_ann_s3_path = self.newAnnPathLabel.text().replace(
+            "New Annotation File (S3 Path): ", ""
+        )
+        new_img_dir_s3_path = self.imgLocateLabel.text().replace(
+            "New Image Directory (S3 Path): ", ""
+        )
+        new_bucket_name, new_ann_key = new_ann_s3_path.replace("s3://", "").split(
+            "/", 1
+        )
         _, new_img_dir_key = new_img_dir_s3_path.replace("s3://", "").split("/", 1)
 
         # Adjust download_s3_files function calls to use correct paths
 
         # Download new annotation file directly to its specific path
         download_s3_files(
-            aws_access_key_id, 
-            aws_secret_access_key, 
-            new_bucket_name, 
+            aws_access_key_id,
+            aws_secret_access_key,
+            new_bucket_name,
             new_ann_key,
-            os.path.dirname(new_ann_path)  # Use the parent directory of new_ann_path
+            os.path.dirname(new_ann_path),  # Use the parent directory of new_ann_path
         )
 
         # Download new images into their specific directory
         download_s3_files(
-            aws_access_key_id, 
-            aws_secret_access_key, 
-            new_bucket_name, 
+            aws_access_key_id,
+            aws_secret_access_key,
+            new_bucket_name,
             new_img_dir_key,
-            new_images_path  # Use new_images_path for storing new images
+            new_images_path,  # Use new_images_path for storing new images
         )
 
-        new_ann_path = os.path.join(outcome_path, "new", os.path.basename(new_ann_key))  # Path to new annotation file
-        new_image_path = os.path.join(outcome_path, "new/images")  # New images are within this directory
-        
+        new_ann_path = os.path.join(
+            outcome_path, "new", os.path.basename(new_ann_key)
+        )  # Path to new annotation file
+        new_image_path = os.path.join(
+            outcome_path, "new/images"
+        )  # New images are within this directory
+
         # Existing dataset paths (assumed to be provided through the dialog)
-        existing_dataset_s3_path = self.existingPathLabel.text().replace("Existing Dataset S3 Path: ", "")
-        existing_bucket_name, existing_dataset_key = existing_dataset_s3_path.replace("s3://", "").split("/", 1)
+        existing_dataset_s3_path = self.existingPathLabel.text().replace(
+            "Existing Dataset S3 Path: ", ""
+        )
+        existing_bucket_name, existing_dataset_key = existing_dataset_s3_path.replace(
+            "s3://", ""
+        ).split("/", 1)
 
         # Directory for existing data within outcome_path
         existing_data_path = os.path.join(outcome_path, "existing_dataset")
-        os.makedirs(existing_data_path, exist_ok=True)  # Ensure the existing data directory exists
+        os.makedirs(
+            existing_data_path, exist_ok=True
+        )  # Ensure the existing data directory exists
 
         # Assuming download_s3_files has been adapted to accommodate directory downloads
         download_s3_files(
@@ -707,26 +833,29 @@ class S3UpdateDialog(QDialog):
             aws_secret_access_key,
             existing_bucket_name,
             existing_dataset_key,
-            existing_data_path  # Download everything into existing_data_path
+            existing_data_path,  # Download everything into existing_data_path
         )
-        
+
         coco_update(
-            new_ann_path=new_ann_path, 
+            new_ann_path=new_ann_path,
             train_ann_path=os.path.join(existing_data_path, "train.json"),
             val_ann_path=os.path.join(existing_data_path, "val.json"),
-            split_ratio=0.8, 
-            new_image_locate=new_image_path
+            split_ratio=0.8,
+            new_image_locate=new_image_path,
         )
         # MessageBox or logging
         print("Update Complete", "Dataset has been updated with files from S3.")
-        
-        QMessageBox.information(self, "Update Initiated", "Dataset update process has been initiated.")
+
+        QMessageBox.information(
+            self, "Update Initiated", "Dataset update process has been initiated."
+        )
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
-    
+
     def initUI(self):
         self.setWindowTitle("COCO Tools")
         self.setGeometry(100, 100, 800, 600)
@@ -742,20 +871,20 @@ class MainWindow(QMainWindow):
         # Create buttons for each functionality and set text
         self.visualizeButton = QPushButton("Visualize")
         self.visualizeButton.setFixedSize(buttonSize)
-        
+
         self.mergeButton = QPushButton("Merge")
         self.mergeButton.setFixedSize(buttonSize)
-        
+
         self.splitButton = QPushButton("Split")
         self.splitButton.setFixedSize(buttonSize)
 
         self.updateButton = QPushButton("Update")
         self.updateButton.setFixedSize(buttonSize)
-        
+
         self.postUpdateButton = QPushButton("Post Update")
         self.postUpdateButton.setFixedSize(buttonSize)
         self.postUpdateButton.clicked.connect(self.showPostUpdateDialog)
-        
+
         # Button for S3 Update
         self.s3UpdateButton = QPushButton("S3 Update")
         self.s3UpdateButton.setFixedSize(buttonSize)
@@ -766,28 +895,28 @@ class MainWindow(QMainWindow):
         self.mergeButton.clicked.connect(self.showMergeDialog)
         self.splitButton.clicked.connect(self.showSplitDialog)
         self.updateButton.clicked.connect(self.showUpdateDialog)
-        
+
         # Adding buttons to the grid layout at desired positions
         gridLayout.addWidget(self.visualizeButton, 0, 0)  # Top-left
         gridLayout.addWidget(self.mergeButton, 0, 1)  # Top-right
         gridLayout.addWidget(self.splitButton, 1, 0)  # Bottom-left
         gridLayout.addWidget(self.updateButton, 1, 1)  # Bottom-right
         gridLayout.addWidget(self.s3UpdateButton, 2, 0)  # Example position
- 
+
         # Enable stretching to push the buttons to the corners
         gridLayout.setColumnStretch(0, 1)
         gridLayout.setColumnStretch(1, 1)
         gridLayout.setRowStretch(0, 1)
         gridLayout.setRowStretch(1, 1)
-        
+
         gridLayout.addWidget(self.postUpdateButton, 1, 2)  # Adjust position as needed
 
         self.centralWidget.setLayout(gridLayout)
-    
+
     def showPostUpdateDialog(self):
         dialog = PostUpdateDialog(self)
         dialog.exec_()
-        
+
     # Method implementations for showing the dialogs
     def showVisualizeDialog(self):
         dialog = VisualizeDialog(self)
@@ -804,7 +933,7 @@ class MainWindow(QMainWindow):
     def showUpdateDialog(self):
         dialog = UpdateDialog(self)
         dialog.exec_()
-    
+
     def showS3UpdateDialog(self):
         dialog = S3UpdateDialog(self)
         dialog.exec_()

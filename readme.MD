@@ -51,9 +51,24 @@ aws_access_key_id: {aws_access_key_id}
 2. **Usage**:
     - The main interface presents options for Visualization, Merging, Splitting, Updating, and Post Updating of datasets.
     - **Visualize**: To visualize, choose the "Visualize" button. Select an image directory and the corresponding COCO annotation file for viewing bounding boxes or segmentation masks.
-    - **Merge**: For merging datasets, indicate the image and annotation directories of the datasets to be combined. Specify if the image sets should also be merged.
+    - **Merge**: For merging datasets, indicate the image and annotation directories of the datasets to be combined. Specify if the image sets 
+    should also be merged.
+    ```   
+      - .
+      ├── images_dir
+      │   ├── sample1
+      │   ├── sample2
+      |   ├── sample3
+      |
+      ├── anns_dir
+      │   ├── sample1.json
+      │   ├── sample2.json
+      │   ├── sample3.json
+    ```
     - **Split**: Splitting a dataset requires providing an annotation file and image directory, along with specifying the split ratio for training set allocation.
-    - **Update**: To run through Merge and Split in one-shot, select new annotations, and specify existing training and validation annotation files along with a new image location. Define the split ratio for new data incorporation.
+    - **Update**: To run through Merge and Split in one-shot, select new annotations, and specify existing training and validation annotation files along with a new image location.
+      : **Split (New Sample)** -> **Merge (Between New and Existing Samples for Train and Val Each)**
+  
     - **S3 Update**: Run every update job by downloading artifacts from S3. You only need to set up S3 URI. Tip: Directly click the `Copy S3 URI` from the web interface.
     - **Post Update**: Execute post-update operations by choosing directories for new and existing samples. This ensures the dataset is optimized and organized according to the standard structure post-update. After checking the quality, you have an option to directly upload your updated project into S3.
 
