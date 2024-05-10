@@ -269,6 +269,15 @@ class RemapCategoriesDialog(QDialog):
                 if annotation["category_id"] in mapping_dict:
                     annotation["category_id"] = mapping_dict[annotation["category_id"]]
 
+            for category in coco_data["categories"]:
+                if category["id"] in mapping_dict:
+                    category["id"] = mapping_dict[category["id"]]
+
+            # Optionally, sort categories by the new 'id' values
+            coco_data["categories"] = sorted(
+                coco_data["categories"], key=lambda x: x["id"]
+            )
+
             # Also, consider if you want to update category IDs in the "categories" section
 
             # Generate the updated file name
