@@ -56,15 +56,15 @@ aws_access_key_id: {aws_access_key_id}
     should also be merged. Note that directory name (i.e. sample1) and COCO file (i.e. sample1.json) should match.
     ```   
       - .
-      ├── images_dir
-      │   ├── sample1
-      │   ├── sample2
-      |   ├── sample3
-      |
-      ├── anns_dir
-      │   ├── sample1.json
-      │   ├── sample2.json
-      │   ├── sample3.json
+        ├── images_dir
+        │   ├── sample1
+        │   ├── sample2
+        │   ├── sample3
+        │
+        ├── anns_dir
+        │   ├── sample1.json
+        │   ├── sample2.json
+        │   ├── sample3.json
     ```
     - **Split**: Splitting a dataset requires providing an annotation file and image directory, along with specifying the split ratio for training set allocation.
     - **Update (Local)**: To run through Merge and Split in one-shot, select new annotations, and specify existing training and validation annotation files along with a new image location.
@@ -74,6 +74,22 @@ aws_access_key_id: {aws_access_key_id}
     - **Post Update**: Execute post-update operations by choosing directories for new and existing samples. This ensures the dataset is optimized and organized according to the standard structure post-update. After checking the quality, you have an option to directly upload your updated project into S3.
 
     [Note] Even if you run S3 Update, still need to take Post Update.
+
+
+3. **Data Structure**: After using cvOps, all data is structured as below. It supports other computer vision projects accordingly. ([SAHI](https://github.com/obss/sahi), [MMDET](https://github.com/open-mmlab/mmdetection))
+    ```   
+      - .
+        ├── train_images
+        │    ├── train_image1.jpg
+        │    ├── ...
+        │
+        ├── val_images
+        │    ├── val_image1.jpg
+        │    ├── ...
+        │
+        ├── train.json
+        ├── val_json
+    ```
 
 ![COCO Tools](demo/COCO_Tools.png)
 
