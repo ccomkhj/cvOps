@@ -3,6 +3,7 @@
 *.JPG
 *.tar
 *.png
+*.yaml
 __pycache__
 build
 cvops.egg-info

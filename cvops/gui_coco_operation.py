@@ -46,15 +46,6 @@ class VisualizeDialog(QDialog):
     Allows users to select an image directory and an annotation file (in JSON format),
     and then visualizes the specified annotations on the images. This is useful for
     verifying the correctness of annotations or for data analysis purposes.
-
-    Attributes:
-        imgDirLabel (QLabel): Displays the selected image directory path.
-        annPathLabel (QLabel): Displays the selected annotation file path.
-
-    Methods:
-        selectImgDir(): Opens a file dialog to select the image directory.
-        selectAnnPath(): Opens a file dialog to select the annotation file.
-        visualize(): Validates selected paths and initiates the visualization process.
     """
 
     def __init__(self, parent=None):
@@ -120,16 +111,6 @@ class MergeDialog(QDialog):
     optionally choose to merge the images as well. This feature is particularly useful
     for tasks that involve consolidating datasets from different sources to create a
     larger, comprehensive dataset for training or evaluation purposes.
-
-    Attributes:
-        imgDirLabel (QLabel): Displays the path of the selected image directory where the COCO images are located.
-        annDirLabel (QLabel): Displays the path of the selected annotation directory where the COCO annotation files are stored.
-        mergeImagesCheckBox (QCheckBox): Allows users to specify whether or not to merge the images from different datasets.
-
-    Methods:
-        selectImgDir(): Opens a file dialog to select the directory containing the images to be merged.
-        selectAnnDir(): Opens a file dialog to select the directory containing the annotation files to be merged.
-        merge(): Validates selected directories and initiates the merging process.
     """
 
     def __init__(self, parent=None):
@@ -308,16 +289,6 @@ class SplitDialog(QDialog):
     a ratio for splitting the dataset. The process facilitates dividing a dataset into separate
     parts for the purpose of training and validating machine learning models, ensuring that
     there is no overlap between the training and validation datasets.
-
-    Attributes:
-        imgDirLabel (QLabel): Displays the path of the selected image directory.
-        annPathLabel (QLabel): Displays the path of the selected annotation file.
-        splitRatioLineEdit (QLineEdit): Input field for specifying the train-validation split ratio.
-
-    Methods:
-        selectImgDir(): Opens a dialog to select the image directory for the dataset to be split.
-        selectAnnPath(): Opens a dialog to select the annotation file corresponding to the dataset.
-        split(): Validates inputs and initiates the dataset splitting process based on the specified ratio.
     """
 
     def __init__(self, parent=None):
@@ -403,20 +374,6 @@ class UpdateDialog(QDialog):
     corresponding new annotations, in addition to existing training and validation
     annotation files. This functionality supports the iterative refinement and expansion
     of datasets - an essential task in machine learning workflows to improve model performance.
-
-    Attributes:
-        newAnnPathLabel (QLabel): Displays the path of the selected new annotation file.
-        imgLocateLabel (QLabel): Displays the path of the selected new image location.
-        trainAnnPathLabel (QLabel): Displays the path of the selected training annotation file.
-        valAnnPathLabel (QLabel): Displays the path of the selected validation annotation file.
-        splitRatioLineEdit (QLineEdit): Input field for specifying new data's train-validation split ratio.
-
-    Methods:
-        selectNewAnnPath(): Opens a dialog to select the new annotation file to be added to the dataset.
-        selectImageLocation(): Opens a dialog to select the location of the new images to be added.
-        selectTrainAnnPath(): Opens a dialog to select the existing training annotations file.
-        selectValAnnPath(): Opens a dialog to select the existing validation annotations file.
-        update(): Validates inputs and initiates the dataset updating process based on the specified inputs and ratio.
     """
 
     def __init__(self, parent=None):
@@ -561,14 +518,6 @@ class PostUpdateDialog(QDialog):
     such as reorganizing files, updating indices, or applying additional transformations.
     This is crucial for maintaining dataset integrity and ensuring compatibility with
     machine learning pipelines.
-
-    Attributes:
-        useLatestConfigCheckbox (QCheckBox): Checkbox for opting to use the latest update configurations automatically.
-
-    Methods:
-        toggleDirSelection(state): Enables or disables directory selection based on the checkbox state.
-        selectDirectory(labelWidget, dialogTitle): Opens a dialog to select directories for new samples, existing samples, or results.
-        postUpdate(): Initiates the post-update operation based on the selected directories and configurations.
     """
 
     def __init__(self, parent=None):
@@ -778,12 +727,6 @@ class S3UpdateDialog(QDialog):
 
     This dialog facilitates specifying S3 paths for new images and annotations, as well as the existing dataset's S3 base path.
     It assists in planning how new data can be merged into an existing dataset, considering a specified train-validation split ratio.
-
-    Attributes:
-        newAnnPathLabel (QLabel): Displays the s3 path of the selected new annotation file.
-        imgLocateLabel (QLabel): Displays the s3 path of the selected new image location.
-        existingPathLabel (QLabel): Displays the s3 path of the project.
-        splitRatioLineEdit (QLineEdit): Entry for specifying new data's train-validation split ratio.
     """
 
     def __init__(self, parent=None):
