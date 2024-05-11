@@ -64,10 +64,13 @@ def visualize(
 
         dataset = fo.Dataset.from_dir(
             dataset_dir=img_dir,
+            data_path=".",
             dataset_type=fo.types.COCODetectionDataset,
             labels_path=ann,
+            label_field="detections",
         )
         print(dataset)
+
         session = fo.launch_app(dataset)
 
         # Keep running the session until explicitly stopped
@@ -82,8 +85,8 @@ def visualize(
 
         # Close the session when done
         session.close()
-    except:
-        print("fiftyone failed to lunch. use pyqt based visualizer.")
+    except Exception as e:
+        print(f"fiftyone failed to lunch. use pyqt based visualizer. Error: {e}")
         if has_segmentation_data(ann):
             cocovis.visualise_all(COCO(ann), img_dir)
 
