@@ -45,14 +45,15 @@ aws_access_key_id: {aws_access_key_id}
 1. **Launch**: Activate the COCO Tools GUI by executing the accompanying script.
 
     ```bash
-    python3 cvops/gui_coco_operation.py
+    python3 cvops/main_window.py
     ```
 
 2. **Usage**:
     - The main interface presents options for Visualization, Merging, Splitting, Updating, and Post Updating of datasets.
-    - **Visualize**: To visualize, choose the "Visualize" button. Select an image directory and the corresponding COCO annotation file for viewing bounding boxes or segmentation masks.
+    - **Visualize**: To visualize COCO datasets.
+    - **Remap Categories**: Remap the sequence of categories.
     - **Merge**: For merging datasets, indicate the image and annotation directories of the datasets to be combined. Specify if the image sets 
-    should also be merged.
+    should also be merged. Note that directory name (i.e. sample1) and COCO file (i.e. sample1.json) should match.
     ```   
       - .
       ├── images_dir
@@ -66,10 +67,10 @@ aws_access_key_id: {aws_access_key_id}
       │   ├── sample3.json
     ```
     - **Split**: Splitting a dataset requires providing an annotation file and image directory, along with specifying the split ratio for training set allocation.
-    - **Update**: To run through Merge and Split in one-shot, select new annotations, and specify existing training and validation annotation files along with a new image location.
+    - **Update (Local)**: To run through Merge and Split in one-shot, select new annotations, and specify existing training and validation annotation files along with a new image location.
       : **Split (New Sample)** -> **Merge (Between New and Existing Samples for Train and Val Each)**
   
-    - **S3 Update**: Run every update job by downloading artifacts from S3. You only need to set up S3 URI. Tip: Directly click the `Copy S3 URI` from the web interface.
+    - **Update (S3)**: Same feature with `Update (Local)` but files are in AWS S3. Tip: Directly click the `Copy S3 URI` from the web interface. Configure `config/s3_credentials.yaml`
     - **Post Update**: Execute post-update operations by choosing directories for new and existing samples. This ensures the dataset is optimized and organized according to the standard structure post-update. After checking the quality, you have an option to directly upload your updated project into S3.
 
     [Note] Even if you run S3 Update, still need to take Post Update.
