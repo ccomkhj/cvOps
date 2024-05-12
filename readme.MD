@@ -11,27 +11,6 @@ cvOps provides an intuitive Graphical User Interface (GUI) for the streamlined m
 - **Post Update Dataset**: Provides functionalities for rearranging and optimizing datasets post-update, ensuring the integrity and effectiveness of the dataset structure.
   - Handling COCO-based computer vision projects of S3
 
-## Post Update Directory Structure
-
-After performing the post-update process, the dataset will adhere to a standardized directory structure:
-
-```
-/
-|-train_images/
-|-val_images/
-|-train.json
-|-val.json
-```
-
-This structure organizes training and validation images into separate folders (`train_images`, `val_images`), with corresponding annotation files (`train.json`, `val.json`) located in the root dataset directory. This clear and efficient organization facilitates easy access and dataset management, crucial for training machine learning models effectively.
-
-Only then, you can use S3 Update function. (Directly update project on AWS S3 bucket.)
-For this, `config/s3_credentials.yaml` is required.
-
-```yaml
-aws_secret_access_key: {aws_secret_access_key}
-aws_access_key_id: {aws_access_key_id} 
-```
 
 
 ## Getting Started
@@ -77,19 +56,26 @@ aws_access_key_id: {aws_access_key_id}
 
 
 3. **Data Structure**: After using cvOps, all data is structured as below. It supports other computer vision projects accordingly. ([SAHI](https://github.com/obss/sahi), [MMDET](https://github.com/open-mmlab/mmdetection))
-    ```   
-      - .
-        ├── train_images
-        │    ├── train_image1.jpg
-        │    ├── ...
-        │
-        ├── val_images
-        │    ├── val_image1.jpg
-        │    ├── ...
-        │
-        ├── train.json
-        ├── val_json
-    ```
+
+After performing the post-update process, the dataset will adhere to a standardized directory structure:
+
+```
+/
+|-train_images/
+|-val_images/
+|-train.json
+|-val.json
+```
+
+This structure organizes training and validation images into separate folders (`train_images`, `val_images`), with corresponding annotation files (`train.json`, `val.json`) located in the root dataset directory. This clear and efficient organization facilitates easy access and dataset management, crucial for training machine learning models effectively.
+
+Only then, you can use Update (S3). (Directly update project on AWS S3 bucket.)
+For this, `config/s3_credentials.yaml` is required.
+
+```yaml
+aws_secret_access_key: {aws_secret_access_key}
+aws_access_key_id: {aws_access_key_id} 
+```
 
 ![COCO Tools](demo/COCO_Tools.png)
 
