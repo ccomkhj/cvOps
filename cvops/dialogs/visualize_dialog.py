@@ -44,6 +44,15 @@ class VisualizeDialog(QDialog):
         visualizeButton.clicked.connect(self.visualize)
         layout.addWidget(visualizeButton)
 
+        # Add QLabel for additional information
+        additional_info_label = QLabel(
+            "By default, the application uses FiftyOne for visualization. "
+            "However, if FiftyOne is unavailable, "
+            "cvops native visualizer is used instead."
+        )
+        additional_info_label.setWordWrap(True)
+        layout.addWidget(additional_info_label)
+
         self.setLayout(layout)
 
     def selectImgDir(self):

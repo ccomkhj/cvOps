@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         # Visualize Button (previously configured)
         self.visualizeButton = QPushButton("Visualize", self.centralWidget)
         self.visualizeButton.setFixedSize(buttonSize)
-        self.visualizeButton.setIcon(QIcon("data/icons/visualization.png"))
+        self.visualizeButton.setIcon(QIcon("demo/icons/visualization.png"))
         self.visualizeButton.setIconSize(icon_size)
         self.visualizeButton.setFont(font)
         self.visualizeButton.setToolTip("Visualize the annotations within the dataset.")
@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
         # Remap Categories Button
         self.remapCategoriesButton = QPushButton("Remap Categories", self.centralWidget)
         self.remapCategoriesButton.setFixedSize(buttonSize)
-        self.remapCategoriesButton.setIcon(QIcon("data/icons/remap.png"))
+        self.remapCategoriesButton.setIcon(QIcon("demo/icons/remap.png"))
         self.remapCategoriesButton.setIconSize(icon_size)
         self.remapCategoriesButton.setFont(font)
         self.remapCategoriesButton.setToolTip("Remap the category ids.")
@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
         # Split Button
         self.splitButton = QPushButton("Split", self.centralWidget)
         self.splitButton.setFixedSize(buttonSize)
-        self.splitButton.setIcon(QIcon("data/icons/split.png"))
+        self.splitButton.setIcon(QIcon("demo/icons/split.png"))
         self.splitButton.setIconSize(icon_size)
         self.splitButton.setFont(font)
         self.splitButton.setToolTip("Split COCO into train and test.")
@@ -81,7 +81,7 @@ class MainWindow(QMainWindow):
         # Merge Button
         self.mergeButton = QPushButton("Merge", self.centralWidget)
         self.mergeButton.setFixedSize(buttonSize)
-        self.mergeButton.setIcon(QIcon("data/icons/merge.png"))
+        self.mergeButton.setIcon(QIcon("demo/icons/merge.png"))
         self.mergeButton.setIconSize(icon_size)
         self.mergeButton.setFont(font)
         self.mergeButton.setToolTip("Merge COCO files.")
@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
         # Update (Local) Button
         self.updateButton = QPushButton("Update (Local)", self.centralWidget)
         self.updateButton.setFixedSize(buttonSize)
-        self.updateButton.setIcon(QIcon("data/icons/update_local.png"))
+        self.updateButton.setIcon(QIcon("demo/icons/update_local.png"))
         self.updateButton.setIconSize(icon_size)
         self.updateButton.setFont(font)
         self.updateButton.setToolTip(
@@ -112,7 +112,7 @@ class MainWindow(QMainWindow):
         self.postUpdateButton.setFixedSize(
             buttonSizeBig
         )  # As previously specified to be bigger
-        self.postUpdateButton.setIcon(QIcon("data/icons/post_update.png"))
+        self.postUpdateButton.setIcon(QIcon("demo/icons/post_update.png"))
         self.postUpdateButton.setIconSize(icon_size)
         self.postUpdateButton.setFont(font)
         self.postUpdateButton.setToolTip(
@@ -123,7 +123,7 @@ class MainWindow(QMainWindow):
         # Update (S3) Button
         self.s3UpdateButton = QPushButton("Update (S3)", self.centralWidget)
         self.s3UpdateButton.setFixedSize(buttonSize)
-        self.s3UpdateButton.setIcon(QIcon("data/icons/update_s3.png"))
+        self.s3UpdateButton.setIcon(QIcon("demo/icons/update_s3.png"))
         self.s3UpdateButton.setIconSize(icon_size)
         self.s3UpdateButton.setFont(font)
         self.s3UpdateButton.setToolTip(
@@ -137,42 +137,57 @@ class MainWindow(QMainWindow):
 
     def showVisualizeDialog(self):
         dialog = VisualizeDialog(self)
-        dialog.setWindowIcon(
-            QIcon("data/icons/visualization.png")
-        )  # Set the window icon
+        dialog.setWindowIcon(QIcon("demo/icons/visualization.png"))
+        apply_palette_to_dialog(dialog, color=(220, 220, 240))  # Light blue
         dialog.exec_()
 
     def showMergeDialog(self):
         dialog = MergeDialog(self)
-        dialog.setWindowIcon(QIcon("data/icons/merge.png"))  # Set the window icon
+        dialog.setWindowIcon(QIcon("demo/icons/merge.png"))
+        apply_palette_to_dialog(dialog, color=(220, 240, 220))  # Light green
         dialog.exec_()
 
     def showSplitDialog(self):
         dialog = SplitDialog(self)
-        dialog.setWindowIcon(QIcon("data/icons/split.png"))  # Set the window icon
+        dialog.setWindowIcon(QIcon("demo/icons/split.png"))
+        apply_palette_to_dialog(dialog, color=(240, 220, 220))  # Light red
         dialog.exec_()
 
     def showUpdateDialog(self):
         dialog = UpdateDialog(self)
-        dialog.setWindowIcon(
-            QIcon("data/icons/update_local.png")
-        )  # Set the window icon
+        dialog.setWindowIcon(QIcon("demo/icons/update_local.png"))
+        apply_palette_to_dialog(
+            dialog, color=(220, 230, 250)
+        )  # Different shade of light blue
         dialog.exec_()
 
     def showPostUpdateDialog(self):
         dialog = PostUpdateDialog(self)
-        dialog.setWindowIcon(QIcon("data/icons/post_update.png"))  # Set the window icon
+        dialog.setWindowIcon(QIcon("demo/icons/post_update.png"))
+        apply_palette_to_dialog(dialog, color=(250, 220, 230))  # Light pink
         dialog.exec_()
 
     def showS3UpdateDialog(self):
         dialog = S3UpdateDialog(self)
-        dialog.setWindowIcon(QIcon("data/icons/update_s3.png"))  # Set the window icon
+        dialog.setWindowIcon(QIcon("demo/icons/update_s3.png"))
+        apply_palette_to_dialog(
+            dialog, color=(230, 250, 220)
+        )  # Different shade of light green
         dialog.exec_()
 
     def showRemapCategoriesDialog(self):
         dialog = RemapCategoriesDialog(self)
-        dialog.setWindowIcon(QIcon("data/icons/remap.png"))  # Set the window icon
+        dialog.setWindowIcon(QIcon("demo/icons/remap.png"))
+        apply_palette_to_dialog(dialog, color=(240, 240, 220))  # Light yellow
         dialog.exec_()
+
+
+def apply_palette_to_dialog(dialog, color=(200, 200, 200)):
+    # Create a new palette for the dialog with lighter gray
+    dialogPalette = QPalette()
+    dialogPalette.setColor(QPalette.Window, QColor(*color))
+    dialogPalette.setColor(QPalette.WindowText, Qt.black)  # Set text color if needed
+    dialog.setPalette(dialogPalette)
 
 
 def main():
