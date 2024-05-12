@@ -137,30 +137,41 @@ class MainWindow(QMainWindow):
 
     def showVisualizeDialog(self):
         dialog = VisualizeDialog(self)
+        dialog.setWindowIcon(
+            QIcon("data/icons/visualization.png")
+        )  # Set the window icon
         dialog.exec_()
 
     def showMergeDialog(self):
         dialog = MergeDialog(self)
+        dialog.setWindowIcon(QIcon("data/icons/merge.png"))  # Set the window icon
         dialog.exec_()
 
     def showSplitDialog(self):
         dialog = SplitDialog(self)
+        dialog.setWindowIcon(QIcon("data/icons/split.png"))  # Set the window icon
         dialog.exec_()
 
     def showUpdateDialog(self):
         dialog = UpdateDialog(self)
+        dialog.setWindowIcon(
+            QIcon("data/icons/update_local.png")
+        )  # Set the window icon
         dialog.exec_()
 
     def showPostUpdateDialog(self):
         dialog = PostUpdateDialog(self)
+        dialog.setWindowIcon(QIcon("data/icons/post_update.png"))  # Set the window icon
         dialog.exec_()
 
     def showS3UpdateDialog(self):
         dialog = S3UpdateDialog(self)
+        dialog.setWindowIcon(QIcon("data/icons/update_s3.png"))  # Set the window icon
         dialog.exec_()
 
     def showRemapCategoriesDialog(self):
         dialog = RemapCategoriesDialog(self)
+        dialog.setWindowIcon(QIcon("data/icons/remap.png"))  # Set the window icon
         dialog.exec_()
 
 
