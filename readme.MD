@@ -2,16 +2,6 @@
 
 cvOps provides an intuitive Graphical User Interface (GUI) for the streamlined management of COCO datasets. Utilizing the versatility of PyQt5, it stands as an essential toolkit for researchers and developers focused on machine learning and computer vision, simplifying critical tasks such as visualizing, merging, splitting, updating, and post-updating COCO datasets.
 
-## Features
-
-- **Visualize Annotations**: Offers tools for visualizing bounding boxes and segmentation masks from COCO annotations directly within the GUI.
-- **Merge Datasets**: Capable of combining multiple COCO datasets into a single comprehensive dataset by merging both images and annotations.
-- **Split Dataset**: Supports the division of a COCO dataset into distinct training and validation sets based on a customizable split ratio.
-- **Update Dataset**: Facilitates the integration of new images and annotations into existing datasets, aiding in their ongoing refinement and expansion. **It includes all Merge and Split**
-- **Post Update Dataset**: Provides functionalities for rearranging and optimizing datasets post-update, ensuring the integrity and effectiveness of the dataset structure.
-  - Handling COCO-based computer vision projects of S3
-
-
 
 ## Getting Started
 
@@ -57,25 +47,25 @@ cvOps provides an intuitive Graphical User Interface (GUI) for the streamlined m
 
 3. **Data Structure**: After using cvOps, all data is structured as below. It supports other computer vision projects accordingly. ([SAHI](https://github.com/obss/sahi), [MMDET](https://github.com/open-mmlab/mmdetection))
 
-After performing the post-update process, the dataset will adhere to a standardized directory structure:
+  After performing the post-update process, the dataset will adhere to a standardized directory structure:
 
-```
-/
-|-train_images/
-|-val_images/
-|-train.json
-|-val.json
-```
+  ```
+  /
+  |-train_images/
+  |-val_images/
+  |-train.json
+  |-val.json
+  ```
 
-This structure organizes training and validation images into separate folders (`train_images`, `val_images`), with corresponding annotation files (`train.json`, `val.json`) located in the root dataset directory. This clear and efficient organization facilitates easy access and dataset management, crucial for training machine learning models effectively.
+  This structure organizes training and validation images into separate folders (`train_images`, `val_images`), with corresponding annotation files (`train.json`, `val.json`) located in the root dataset directory. This clear and efficient organization facilitates easy access and dataset management, crucial for training machine learning models effectively.
 
-Only then, you can use Update (S3). (Directly update project on AWS S3 bucket.)
-For this, `config/s3_credentials.yaml` is required.
+  Only then, you can use Update (S3). (Directly update project on AWS S3 bucket.)
+  For this, `config/s3_credentials.yaml` is required.
 
-```yaml
-aws_secret_access_key: {aws_secret_access_key}
-aws_access_key_id: {aws_access_key_id} 
-```
+  ```yaml
+  aws_secret_access_key: {aws_secret_access_key}
+  aws_access_key_id: {aws_access_key_id} 
+  ```
 
 ![COCO Tools](demo/COCO_Tools.png)
 
