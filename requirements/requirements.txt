@@ -7,3 +7,5 @@ pytest
 pytest-mock
 coco-assistant
 scikit-multilearn
+scikit-learn
+boto3
