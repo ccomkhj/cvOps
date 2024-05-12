@@ -1,0 +1,28 @@
+name: Pytest
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+    - name: Install package in editable mode
+      run: pip3 install -e .
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb
+    - name: Run Xvfb
+      run: |
+        Xvfb :99 & 
+        export DISPLAY=:99
+    - name: Run tests
+      run: pytest

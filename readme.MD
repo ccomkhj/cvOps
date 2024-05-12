@@ -11,6 +11,11 @@ cvOps provides an intuitive Graphical User Interface (GUI) for the streamlined m
   pip install git+https://github.com/ccomkhj/COCO-Assistant.git@master
   ```
 
+  Check if all test is successful using below.
+  ```bash
+  pytest
+  ```
+
 1. **Launch**: Activate the COCO Tools GUI by executing the accompanying script.
 
     ```bash
