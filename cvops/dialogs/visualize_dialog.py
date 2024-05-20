@@ -2,6 +2,7 @@ import os
 from PyQt5.QtWidgets import (
     QFileDialog,
     QMessageBox,
+    QCheckBox,
     QDialog,
     QVBoxLayout,
     QPushButton,
@@ -44,6 +45,9 @@ class VisualizeDialog(QDialog):
         visualizeButton.clicked.connect(self.visualize)
         layout.addWidget(visualizeButton)
 
+        self.showOnlyBoxCheckBox = QCheckBox("Show Only Bounding Boxes")
+        layout.addWidget(self.showOnlyBoxCheckBox)
+
         # Add QLabel for additional information
         additional_info_label = QLabel(
             "By default, the application uses FiftyOne for visualization. "
@@ -70,6 +74,7 @@ class VisualizeDialog(QDialog):
     def visualize(self):
         img_dir = self.imgDirLabel.text().replace("Image Directory: ", "")
         ann_path = self.annPathLabel.text().replace("Annotation File: ", "")
+        show_only_box = self.showOnlyBoxCheckBox.isChecked()
         if not os.path.exists(img_dir) or not os.path.exists(ann_path):
             QMessageBox.critical(
                 self,
@@ -78,6 +83,6 @@ class VisualizeDialog(QDialog):
             )
             return
         coco_visualize(
-            img_dir, ann_path
+            img_dir, ann_path, show_only_box
         )  # Assuming this is the correct name for the segmentation visualization function
         QMessageBox.information(self, "Visualize", "Visualization completed.")

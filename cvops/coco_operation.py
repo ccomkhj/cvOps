@@ -44,6 +44,7 @@ app = typer.Typer(help="Awesome cvOps Tool.", rich_markup_mode="rich")
 def visualize(
     img_dir: str = typer.Argument(..., help="directory of images"),
     ann: str = typer.Argument(..., help="path of annotations"),
+    only_box: bool = typer.Option(False),
 ):
     """
     [bold green]Visualize coco sample[/bold green]
@@ -61,6 +62,7 @@ def visualize(
     """
 
     try:
+        print("Loading fiftyone, it may takes 30 secs, please wait.")
         import fiftyone as fo
 
         base_dir = os.getcwd()
@@ -95,7 +97,7 @@ def visualize(
 
     except Exception as e:
         print(f"fiftyone failed to lunch. use pyqt based visualizer. Error: {e}")
-        if has_segmentation_data(ann):
+        if has_segmentation_data(ann) and not only_box:
             cocovis.visualise_all(COCO(ann), img_dir)
 
         else:
