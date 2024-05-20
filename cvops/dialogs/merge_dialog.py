@@ -10,8 +10,7 @@ from PyQt5.QtWidgets import (
     QCheckBox,
 )
 
-from coco_assistant import COCO_Assistant
-from pycocotools.coco import COCO
+from cvops.coco_operation import merge as cvops_merge
 
 
 class MergeDialog(QDialog):
@@ -73,23 +72,8 @@ class MergeDialog(QDialog):
             QMessageBox.critical(self, "Error", "Please select valid directories.")
             return
 
-        cas = COCO_Assistant(img_dir, ann_dir)
-        cas.merge()
-        print("update merged.json into right format.")
-        merged_coco_path = os.path.join(
-            os.path.dirname(ann_dir), "results", "merged", "annotations", "merged.json"
-        )
         try:
-            coco_file = COCO(merged_coco_path)
-            # Iterate over annotation IDs
-            for ann_id in coco_file.anns:
-                ann = coco_file.anns[ann_id]
-                # Check if the 'segmentation' key exists and if it's empty
-                if "segmentation" in ann and ann["segmentation"] == [[]]:
-                    # Replace empty segmentation with an empty list
-                    ann["segmentation"] = []
-
-            # Now coco_file.anns should have empty segmentations replaced with []
+            cvops_merge(img_dir, ann_dir)
             QMessageBox.information(self, "Merge", "Datasets merged successfully.")
         except TypeError:
             QMessageBox.information(self, "Merge", "Datasets merge fail!")
