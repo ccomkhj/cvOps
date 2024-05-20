@@ -9,6 +9,7 @@ import funcy
 from pycocotools.coco import COCO
 import shutil
 
+
 def load(path: str) -> List[str]:
     """load files
 
@@ -42,7 +43,7 @@ def palette2mask(ann: str, conv: Dict[int, List[int]]) -> np.ndarray:
         print(f"No file found at {ann}")
         return np.array([])
 
-    img = img.convert('RGB')
+    img = img.convert("RGB")
     palette = np.array(img)
 
     drawing = np.zeros(palette.shape[:2], dtype=int)
@@ -81,34 +82,39 @@ def filter_images(images, annotations):
 
     return funcy.lfilter(lambda a: int(a["id"]) in annotation_ids, images)
 
+
 def locate_images(source: str, destination: str) -> None:
     """locate images based on source and destination path."""
-    
+
     try:
         shutil.copy(source, destination)
         print(f"File copied successfully at {destination}")
-    
+
     # If source and destination are same
     except shutil.SameFileError:
         print("Source and destination represents the same file.")
-    
+
     # If there is any permission issue
     except PermissionError:
         print("Permission denied.")
-    
+
     # For other errors
     except:
         print("Error occurred while copying file.")
-        
-        
+
+
 def get_image_files(directory):
-    image_extensions = ['.jpg', '.jpeg', '.png']
+    image_extensions = [".jpg", ".jpeg", ".png"]
     directory_path = Path(directory)
 
-    image_files = [file.__str__() for file in directory_path.glob(
-        '*') if file.suffix.lower() in image_extensions]
+    image_files = [
+        file.__str__()
+        for file in directory_path.glob("*")
+        if file.suffix.lower() in image_extensions
+    ]
 
     return image_files
+
 
 def has_segmentation_data(ann_path: str) -> bool:
     """
@@ -121,7 +127,32 @@ def has_segmentation_data(ann_path: str) -> bool:
         annIds = coco.getAnnIds(imgIds=imgId, catIds=catIds, iscrowd=None)
         anns = coco.loadAnns(annIds)
         for ann in anns:
-            if 'segmentation' in ann and any(ann['segmentation']):
+            if "segmentation" in ann and any(ann["segmentation"]):
                 # segmentation exists and it's not empty, then return True.
                 return True
     return False
+
+
+def check_coco_sanity(coco_path: str):
+    flag = False
+    coco_file = COCO(coco_path)
+
+    # Load annotations
+    annotations = coco_file.dataset["annotations"]
+
+    # Iterate over annotations
+    for i, ann in enumerate(annotations):
+        # Check if the 'segmentation' key exists and if it's empty
+        if "segmentation" in ann and ann["segmentation"] == [[]]:
+            # Replace empty segmentation with an empty list
+            annotations[i]["segmentation"] = []
+            flag = True
+
+    if flag:
+        # Update the COCO dataset
+        coco_file.dataset["annotations"] = annotations
+
+        # Save the updated COCO file
+        with open(coco_path, "w") as f:
+            print(f"Rewrite file at {coco_path}")
+            json.dump(coco_file.dataset, f)

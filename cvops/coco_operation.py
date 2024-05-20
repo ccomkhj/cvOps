@@ -19,6 +19,7 @@ from skmultilearn.model_selection import iterative_train_test_split
 from tools.helpers import (
     filter_annotations,
     filter_images,
+    check_coco_sanity,
     locate_images,
     save_coco,
     get_image_files,
@@ -62,29 +63,36 @@ def visualize(
     try:
         import fiftyone as fo
 
+        base_dir = os.getcwd()
         dataset = fo.Dataset.from_dir(
-            dataset_dir=img_dir,
+            dataset_dir=os.path.join(base_dir, img_dir),
             data_path=".",
             dataset_type=fo.types.COCODetectionDataset,
-            labels_path=ann,
+            labels_path=os.path.join(base_dir, ann),
             label_field="detections",
         )
         print(dataset)
 
         session = fo.launch_app(dataset)
+        session.wait()
 
-        # Keep running the session until explicitly stopped
-        while True:
-            try:
-                # Your main script logic goes here
-                pass
-            except KeyboardInterrupt:
-                # Handle KeyboardInterrupt (Ctrl+C) to gracefully exit the loop
-                print("Exiting the loop...")
-                break
-
-        # Close the session when done
+        print("Closing FiftyOne session...")
         session.close()
+        # try:
+        #     while True:
+        #         # Your main script logic goes here
+        #         user_input = input("Press 'q' to quit, or any other key to continue: ")
+        #         if user_input.lower() == "q":
+        #             break
+        # except KeyboardInterrupt:
+        #     print("\nKeyboardInterrupt detected. Exiting gracefully...")
+        # finally:
+        #     # Ensure graceful session closure
+        #     print("Closing FiftyOne session...")
+        #     session.close()
+
+        #     print("Session closed.")
+
     except Exception as e:
         print(f"fiftyone failed to lunch. use pyqt based visualizer. Error: {e}")
         if has_segmentation_data(ann):
@@ -157,6 +165,11 @@ def merge(
     # Create COCO_Assistant object
     cas = COCO_Assistant(img_dir, ann_dir)
     cas.merge()
+    print("update merged.json into right format.")
+    merged_coco_path = os.path.join(
+        os.path.dirname(ann_dir), "results", "merged", "annotations", "merged.json"
+    )
+    check_coco_sanity(merged_coco_path)
 
 
 @app.command()
