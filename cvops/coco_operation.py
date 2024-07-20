@@ -18,7 +18,6 @@ from skmultilearn.model_selection import iterative_train_test_split
 
 from tools.helpers import (
     filter_annotations,
-    filter_images,
     check_coco_sanity,
     locate_images,
     save_coco,
@@ -226,122 +225,65 @@ def split(
     image_locate: Optional[str] = typer.Argument(
         default="", help="Locate images based on the split if the value is given."
     ),
-    multi: bool = typer.Option(
-        False,
-        help="Make mask covering multi class. if false, it makes binary mask. (fore/background mask) by adding --multi",
-    ),
     independent: bool = typer.Option(
-        False,
-        help="False if it's dependent to other pipeline.",
+        False, help="False if it's dependent to other pipeline."
     ),
 ):
 
-    with open(ann_path, "rt", encoding="UTF-8") as annotations:
-        coco = json.load(annotations)
-        info = coco["info"]
-        licenses = coco.get("licenses")
-        images = coco["images"]
-        annotations = coco["annotations"]
-        categories = coco["categories"]
+    def save_annotations(path, info, licenses, images, annotations, categories):
+        save_coco(path, info, licenses, images, annotations, categories)
+        print(f"Saved {len(annotations)} entries in {path}")
 
-        images_with_annotations = funcy.lmap(lambda a: int(a["image_id"]), annotations)
-
-        images = funcy.lremove(lambda i: i["id"] not in images_with_annotations, images)
-
-        if multi:
-
-            annotation_categories = funcy.lmap(
-                lambda a: int(a["category_id"]), annotations
-            )
-
-            # bottle neck 1
-            # remove classes that has only one sample, because it can't be split into the training and testing sets
-            annotation_categories = funcy.lremove(
-                lambda i: annotation_categories.count(i) <= 1, annotation_categories
-            )
-
-            annotations = funcy.lremove(
-                lambda i: i["category_id"] not in annotation_categories, annotations
-            )
-
-            X_train, y_train, X_test, y_test = iterative_train_test_split(
-                np.array([annotations]).T,
-                np.array([annotation_categories]).T,
-                test_size=1 - split,
-            )
-
-            save_coco(
-                train_path,
-                info,
-                licenses,
-                filter_images(images, X_train.reshape(-1)),
-                X_train.reshape(-1).tolist(),
-                categories,
-            )
-            save_coco(
-                test_path,
-                info,
-                licenses,
-                filter_images(images, X_test.reshape(-1)),
-                X_test.reshape(-1).tolist(),
-                categories,
-            )
-
-            print(
-                "Saved {} entries in {} and {} in {}".format(
-                    len(X_train), train_path, len(X_test), test_path
-                )
-            )
-
-        else:
-
-            X_train, X_test = train_test_split(images, train_size=split, shuffle=True)
-
-            anns_train = filter_annotations(annotations, X_train)
-            anns_test = filter_annotations(annotations, X_test)
-
-            save_coco(train_path, info, licenses, X_train, anns_train, categories)
-            save_coco(test_path, info, licenses, X_test, anns_test, categories)
-
-            print(
-                "Saved {} entries in {} and {} in {}".format(
-                    len(anns_train), train_path, len(anns_test), test_path
-                )
-            )
-    if image_locate != "":
-        # if the path is given,
-
-        # Create folder of images next to train and test file
-        if independent:
-            parent_train_dir = os.path.dirname(train_path)
-            destDir_train = os.path.join(parent_train_dir, "train_images")
-        else:
-            parent_train_dir = os.path.dirname(os.path.dirname(train_path))
-            destDir_train = os.path.join(parent_train_dir, "images", "new_train_images")
-        os.makedirs(destDir_train, exist_ok=True)
-
-        # Iterate the dictionary and send it to source and destination.
-        for train_obj in X_train:
-            file_name = train_obj.get("file_name")
+    def create_image_dirs(parent_dir, subdir, images_list):
+        os.makedirs(subdir, exist_ok=True)
+        for img_obj in images_list:
+            file_name = img_obj.get("file_name")
             source = os.path.join(image_locate, file_name)
-            destination = os.path.join(destDir_train, file_name)
+            destination = os.path.join(subdir, file_name)
             locate_images(source, destination)
 
-        # if the path is given,
-        if independent:
-            parent_val_dir = os.path.dirname(test_path)
-            destDir_test = os.path.join(parent_val_dir, "val_images")
-        else:
-            parent_val_dir = os.path.dirname(os.path.dirname(test_path))
-            destDir_test = os.path.join(parent_val_dir, "images", "new_val_images")
+    with open(ann_path, "rt", encoding="UTF-8") as annotations_file:
+        coco = json.load(annotations_file)
+        info, licenses, images, annotations, categories = (
+            coco["info"],
+            coco.get("licenses"),
+            coco["images"],
+            coco["annotations"],
+            coco["categories"],
+        )
 
-        os.makedirs(destDir_test, exist_ok=True)
+    images_with_annotations = funcy.lmap(lambda a: int(a["image_id"]), annotations)
+    images = [i for i in images if i["id"] in images_with_annotations]
 
-        for test_obj in X_test:
-            file_name = test_obj.get("file_name")
-            source = os.path.join(image_locate, file_name)
-            destination = os.path.join(destDir_test, file_name)
-            locate_images(source, destination)
+    X_train, X_test = train_test_split(images, train_size=split, shuffle=True)
+    anns_train = filter_annotations(annotations, X_train)
+    anns_test = filter_annotations(annotations, X_test)
+
+    save_annotations(train_path, info, licenses, X_train, anns_train, categories)
+    save_annotations(test_path, info, licenses, X_test, anns_test, categories)
+
+    if image_locate:
+        parent_train_dir = (
+            os.path.dirname(train_path)
+            if independent
+            else os.path.dirname(os.path.dirname(train_path))
+        )
+        parent_val_dir = (
+            os.path.dirname(test_path)
+            if independent
+            else os.path.dirname(os.path.dirname(test_path))
+        )
+
+        train_dir = os.path.join(
+            parent_train_dir,
+            "train_images" if independent else "images/new_train_images",
+        )
+        test_dir = os.path.join(
+            parent_val_dir, "val_images" if independent else "images/new_val_images"
+        )
+
+        create_image_dirs(parent_train_dir, train_dir, X_train)
+        create_image_dirs(parent_val_dir, test_dir, X_test)
 
 
 @app.command()
@@ -409,7 +351,6 @@ def update(
         os.path.join(outcome_val_ann, "new_val_images.json"),
         split_ratio,
         new_image_locate,
-        multi=False,
     )
 
     # Move splitted images

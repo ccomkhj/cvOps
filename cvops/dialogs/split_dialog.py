@@ -92,7 +92,7 @@ class SplitDialog(QDialog):
             test_path=val_path,
             split=split_ratio,
             image_locate=img_dir,  # Passing the selected image directory
-            multi=False,
             independent=True,
         )
+        # GPT: Add dummy function to upload files into S3
         QMessageBox.information(self, "Split", "Dataset split successfully.")
