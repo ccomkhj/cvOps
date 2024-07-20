@@ -183,6 +183,13 @@ class PostUpdateDialog(QDialog):
                 "Enter the S3 base URI (e.g., s3://hexa-cv-dataset/Fragaria × ananassa/fruit_detection/):",
             )
             if ok and s3_uri:
+
+                dataset_description, ok = QInputDialog.getText(
+                    self,
+                    "Dataset Description",
+                    "Enter a one-line sentence to describe this dataset:",
+                )
+
                 try:
                     # Extract bucket name and path from s3_uri
                     if not s3_uri.startswith("s3://"):
@@ -208,7 +215,7 @@ class PostUpdateDialog(QDialog):
                         aws_secret_access_key,
                         bucket_name,
                         processed_results_path,
-                        s3_key + f"{time_str}",
+                        s3_key + f"{time_str}_{dataset_description}",
                     )
 
                     QMessageBox.information(
