@@ -93,5 +93,6 @@ class SplitDialog(QDialog):
             split=split_ratio,
             image_locate=img_dir,  # Passing the selected image directory
             multi=False,
+            independent=True,
         )
         QMessageBox.information(self, "Split", "Dataset split successfully.")

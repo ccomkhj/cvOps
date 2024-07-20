@@ -230,6 +230,10 @@ def split(
         False,
         help="Make mask covering multi class. if false, it makes binary mask. (fore/background mask) by adding --multi",
     ),
+    independent: bool = typer.Option(
+        False,
+        help="False if it's dependent to other pipeline.",
+    ),
 ):
 
     with open(ann_path, "rt", encoding="UTF-8") as annotations:
@@ -308,8 +312,12 @@ def split(
         # if the path is given,
 
         # Create folder of images next to train and test file
-        parent_train_dir = os.path.dirname(os.path.dirname(train_path))
-        destDir_train = os.path.join(parent_train_dir, "images", "new_train_images")
+        if independent:
+            parent_train_dir = os.path.dirname(train_path)
+            destDir_train = os.path.join(parent_train_dir, "train_images")
+        else:
+            parent_train_dir = os.path.dirname(os.path.dirname(train_path))
+            destDir_train = os.path.join(parent_train_dir, "images", "new_train_images")
         os.makedirs(destDir_train, exist_ok=True)
 
         # Iterate the dictionary and send it to source and destination.
@@ -320,8 +328,13 @@ def split(
             locate_images(source, destination)
 
         # if the path is given,
-        parent_val_dir = os.path.dirname(os.path.dirname(test_path))
-        destDir_test = os.path.join(parent_val_dir, "images", "new_val_images")
+        if independent:
+            parent_val_dir = os.path.dirname(test_path)
+            destDir_test = os.path.join(parent_val_dir, "val_images")
+        else:
+            parent_val_dir = os.path.dirname(os.path.dirname(test_path))
+            destDir_test = os.path.join(parent_val_dir, "images", "new_val_images")
+
         os.makedirs(destDir_test, exist_ok=True)
 
         for test_obj in X_test:
