@@ -1,4 +1,5 @@
 import os
+import datetime
 from PyQt5.QtWidgets import (
     QFileDialog,
     QMessageBox,
@@ -6,10 +7,11 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QPushButton,
     QLabel,
-    QFileDialog,
     QLineEdit,
+    QInputDialog,
 )
 from cvops.coco_operation import split as coco_split
+from tools.s3_handler import upload_s3_files, load_aws_credentials
 
 
 class SplitDialog(QDialog):
@@ -94,5 +96,70 @@ class SplitDialog(QDialog):
             image_locate=img_dir,  # Passing the selected image directory
             independent=True,
         )
-        # GPT: Add dummy function to upload files into S3
+
+        self.prompt_s3_upload(train_path, val_path)
+
         QMessageBox.information(self, "Split", "Dataset split successfully.")
+
+    def prompt_s3_upload(self, train_path, val_path):
+        # Prompt the user for S3 upload
+        upload_reply = QMessageBox.question(
+            self,
+            "Upload to S3",
+            "Would you like to upload the results to an AWS S3 bucket?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+
+        if upload_reply == QMessageBox.Yes:
+            s3_uri, ok = QInputDialog.getText(
+                self,
+                "S3 URI",
+                "Enter the S3 base URI (e.g., s3://hexa-cv-dataset/Fragaria × ananassa/fruit_detection/):",
+            )
+            if ok and s3_uri:
+
+                dataset_description, ok = QInputDialog.getText(
+                    self,
+                    "Dataset Description",
+                    "Enter a one-line sentence to describe this dataset:",
+                )
+
+                try:
+                    # Extract bucket name and path from s3_uri
+                    if not s3_uri.startswith("s3://"):
+                        raise ValueError("Invalid S3 URI. Must start with 's3://'.")
+
+                    processed_results_path = os.path.dirname(train_path)
+                    # Extract epoch time from the path
+                    epoch_time = os.path.getmtime(train_path)
+
+                    # Convert epoch time to a datetime object
+                    time_obj = datetime.datetime.fromtimestamp(epoch_time)
+
+                    # Format the datetime object into a human-readable string, e.g., "YYYY-MM-DD_HH-MM-SS"
+                    time_str = time_obj.strftime("%Y-%m-%d_%H-%M-%S")
+
+                    bucket_name, s3_key = s3_uri[5:].split("/", 1)
+                    aws_access_key_id, aws_secret_access_key = load_aws_credentials()
+
+                    # Upload files to S3
+                    upload_s3_files(
+                        aws_access_key_id,
+                        aws_secret_access_key,
+                        bucket_name,
+                        processed_results_path,
+                        s3_key + f"{time_str}_{dataset_description}",
+                    )
+
+                    QMessageBox.information(
+                        self, "S3 Upload", "Results successfully uploaded to S3."
+                    )
+                except ValueError as ve:
+                    QMessageBox.critical(self, "S3 Upload Error", str(ve))
+                except Exception as e:
+                    QMessageBox.critical(
+                        self,
+                        "S3 Upload Error",
+                        f"Failed to upload results to S3: {str(e)}",
+                    )
