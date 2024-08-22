@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QPalette, QColor, QIcon, QFont
 
+
 # Assuming dialogs are in a package named "dialogs"
 from dialogs import (
     VisualizeDialog,
@@ -19,6 +20,8 @@ from dialogs import (
     PostUpdateDialog,
     S3UpdateDialog,
     RemapCategoriesDialog,
+    # Import the newly created dialog
+    SplitNameDialog,
 )
 
 
@@ -30,13 +33,10 @@ class MainWindow(QMainWindow):
     def initUI(self):
         self.setWindowTitle("COCO Tools")
         self.setGeometry(100, 100, 800, 600)
-
         font = QFont("Arial", 12)
         icon_size = QSize(40, 40)
-
         self.centralWidget = QWidget(self)
         self.setCentralWidget(self.centralWidget)
-
         gridLayout = QGridLayout(self.centralWidget)
 
         # Button size
@@ -60,6 +60,7 @@ class MainWindow(QMainWindow):
         self.remapCategoriesButton.setFont(font)
         self.remapCategoriesButton.setToolTip("Remap the category ids.")
         self.remapCategoriesButton.clicked.connect(self.showRemapCategoriesDialog)
+
         gridLayout.addWidget(self.visualizeButton, 0, 0)
         gridLayout.addWidget(self.remapCategoriesButton, 0, 1)
 
@@ -78,6 +79,17 @@ class MainWindow(QMainWindow):
         self.splitButton.setToolTip("Split COCO into train and test.")
         self.splitButton.clicked.connect(self.showSplitDialog)
 
+        # Separate by Name Button
+        self.splitNameButton = QPushButton("Separate by Name", self.centralWidget)
+        self.splitNameButton.setFixedSize(buttonSize)
+        self.splitNameButton.setIcon(QIcon("demo/icons/split_name.png"))
+        self.splitNameButton.setIconSize(icon_size)
+        self.splitNameButton.setFont(font)
+        self.splitNameButton.setToolTip(
+            "Split images into separate folders based on name keys."
+        )
+        self.splitNameButton.clicked.connect(self.showSplitNameDialog)
+
         # Merge Button
         self.mergeButton = QPushButton("Merge", self.centralWidget)
         self.mergeButton.setFixedSize(buttonSize)
@@ -88,13 +100,14 @@ class MainWindow(QMainWindow):
         self.mergeButton.clicked.connect(self.showMergeDialog)
 
         gridLayout.addWidget(self.splitButton, 2, 0)
-        gridLayout.addWidget(self.mergeButton, 2, 1)
+        gridLayout.addWidget(self.splitNameButton, 2, 1)
+        gridLayout.addWidget(self.mergeButton, 3, 0)
 
         # Divider after row 1
         divider2 = QFrame()
         divider2.setFrameShape(QFrame.HLine)
         divider2.setFrameShadow(QFrame.Sunken)
-        gridLayout.addWidget(divider2, 3, 0, 1, -1)  # Span all columns
+        gridLayout.addWidget(divider2, 4, 0, 1, -1)  # Span all columns
 
         # Update (Local) Button
         self.updateButton = QPushButton("Update (Local)", self.centralWidget)
@@ -116,7 +129,7 @@ class MainWindow(QMainWindow):
         self.postUpdateButton.setIconSize(icon_size)
         self.postUpdateButton.setFont(font)
         self.postUpdateButton.setToolTip(
-            "After Update process, decide if you want to combine. It consists visualization of train and validation set. Afterwards, you can directly upload to S3 bucket."
+            "After Update process, decide if you want to combine. It consists of visualization of train and validation set. Afterwards, you can directly upload to S3 bucket."
         )
         self.postUpdateButton.clicked.connect(self.showPostUpdateDialog)
 
@@ -131,9 +144,9 @@ class MainWindow(QMainWindow):
         )
         self.s3UpdateButton.clicked.connect(self.showS3UpdateDialog)
 
-        gridLayout.addWidget(self.updateButton, 4, 0)
-        gridLayout.addWidget(self.postUpdateButton, 4, 1, 2, 1)
-        gridLayout.addWidget(self.s3UpdateButton, 5, 0)
+        gridLayout.addWidget(self.updateButton, 5, 0)
+        gridLayout.addWidget(self.postUpdateButton, 5, 1, 2, 1)
+        gridLayout.addWidget(self.s3UpdateButton, 6, 0)
 
     def showVisualizeDialog(self):
         dialog = VisualizeDialog(self)
@@ -181,6 +194,12 @@ class MainWindow(QMainWindow):
         apply_palette_to_dialog(dialog, color=(240, 240, 220))  # Light yellow
         dialog.exec_()
 
+    def showSplitNameDialog(self):
+        dialog = SplitNameDialog(self)
+        dialog.setWindowIcon(QIcon("demo/icons/split_name.png"))
+        apply_palette_to_dialog(dialog, color=(240, 220, 230))  # Light pink
+        dialog.exec_()
+
 
 def apply_palette_to_dialog(dialog, color=(200, 200, 200)):
     # Create a new palette for the dialog with lighter gray
@@ -194,12 +213,10 @@ def main():
     app = QApplication(sys.argv)
     # Force the style to be the same on all OSs:
     app.setStyle("Fusion")
-
     # Now use a palette to switch to dark colors:
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor(53, 53, 53))
     palette.setColor(QPalette.WindowText, Qt.white)
-
     app.setPalette(palette)
     mainWindow = MainWindow()
     mainWindow.show()

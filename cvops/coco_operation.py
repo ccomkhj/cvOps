@@ -372,12 +372,15 @@ def separate_by_name(
 ):
     # Load COCO annotations
     coco = COCO(ann_path)
-
     separated_cocos = []
     covered_img_ids = set()
+    new_coco_dicts = {}
+
+    # Get the initial counts
+    initial_image_count = len(coco.getImgIds())
+    initial_annotation_count = len(coco.getAnnIds())
 
     for name_key in name_keys:
-
         # Filter image ids that contain the name_key in their file name
         img_ids = [
             img_id
@@ -398,13 +401,43 @@ def separate_by_name(
             "categories": categories,
         }
 
-        parent_dir = os.path.dirname(img_path)
+        # Collect the changes in a dictionary
+        new_coco_dicts[name_key] = separated_coco
 
+    # Check for uncovered images
+    all_img_ids = set(coco.getImgIds())
+    uncovered_img_ids = all_img_ids - covered_img_ids
+    if uncovered_img_ids:
+        uncovered_images = coco.loadImgs(list(uncovered_img_ids))
+        uncovered_filenames = [img["file_name"] for img in uncovered_images]
+        raise ValueError(f"Uncovered images found: {uncovered_filenames}")
+
+    # Verify the counts
+    post_image_count = sum(
+        len(sep_coco["images"]) for sep_coco in new_coco_dicts.values()
+    )
+    post_annotation_count = sum(
+        len(sep_coco["annotations"]) for sep_coco in new_coco_dicts.values()
+    )
+
+    if initial_image_count != post_image_count:
+        raise ValueError(
+            f"Image count mismatch: {initial_image_count} != {post_image_count}"
+        )
+
+    if initial_annotation_count != post_annotation_count:
+        raise ValueError(
+            f"Annotation count mismatch: {initial_annotation_count} != {post_annotation_count}"
+        )
+
+    # Apply the changes after validation
+    parent_dir = os.path.dirname(img_path)
+    for name_key, separated_coco in new_coco_dicts.items():
         # Create directory for name_key if it doesn't exist
         os.makedirs(os.path.join(parent_dir, name_key), exist_ok=True)
 
         # Move images to respective directories
-        for img in images:
+        for img in separated_coco["images"]:
             src = os.path.join(img_path, img["file_name"])
             dst = os.path.join(parent_dir, name_key, img["file_name"])
             if os.path.exists(src):  # Ensure the file exists before copying
@@ -414,16 +447,7 @@ def separate_by_name(
         coco_file_name = f"{name_key}.json"
         with open(os.path.join(parent_dir, coco_file_name), "w") as f:
             json.dump(separated_coco, f, indent=2)
-
         separated_cocos.append(coco_file_name)
-
-    # Check for uncovered images
-    all_img_ids = set(coco.getImgIds())
-    uncovered_img_ids = all_img_ids - covered_img_ids
-    if uncovered_img_ids:
-        uncovered_images = coco.loadImgs(list(uncovered_img_ids))
-        uncovered_filenames = [img["file_name"] for img in uncovered_images]
-        raise ValueError(f"Uncovered images found: {uncovered_filenames}")
 
     return separated_cocos
 
