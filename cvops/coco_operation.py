@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Optional
+from typing import Optional, List
 
 import funcy
 import numpy as np
@@ -14,7 +14,6 @@ from coco_assistant import coco_visualiser as cocovis
 from PIL import Image
 from pycocotools.coco import COCO
 from sklearn.model_selection import train_test_split
-from skmultilearn.model_selection import iterative_train_test_split
 
 from tools.helpers import (
     filter_annotations,
@@ -363,6 +362,70 @@ def update(
     # path of outcome_train/val_img is not effective. just a place holder.
     merge(outcome_train_img, outcome_train_ann)
     merge(outcome_val_img, outcome_val_ann)
+
+
+@app.command()
+def separate_by_name(
+    img_path: str = typer.Argument(..., help="Path to image files"),
+    ann_path: str = typer.Argument(..., help="Path to COCO annotations file"),
+    name_keys: List[str] = typer.Argument(...),
+):
+    # Load COCO annotations
+    coco = COCO(ann_path)
+
+    separated_cocos = []
+    covered_img_ids = set()
+
+    for name_key in name_keys:
+
+        # Filter image ids that contain the name_key in their file name
+        img_ids = [
+            img_id
+            for img_id in coco.getImgIds()
+            if name_key in coco.loadImgs(img_id)[0]["file_name"]
+        ]
+        covered_img_ids.update(img_ids)
+
+        # Load images and annotations for these image ids
+        images = coco.loadImgs(img_ids)
+        annotations = coco.loadAnns(coco.getAnnIds(imgIds=img_ids))
+        categories = coco.loadCats(coco.getCatIds())
+
+        # Create separate COCO annotation
+        separated_coco = {
+            "images": images,
+            "annotations": annotations,
+            "categories": categories,
+        }
+
+        parent_dir = os.path.dirname(img_path)
+
+        # Create directory for name_key if it doesn't exist
+        os.makedirs(os.path.join(parent_dir, name_key), exist_ok=True)
+
+        # Move images to respective directories
+        for img in images:
+            src = os.path.join(img_path, img["file_name"])
+            dst = os.path.join(parent_dir, name_key, img["file_name"])
+            if os.path.exists(src):  # Ensure the file exists before copying
+                shutil.copy(src, dst)
+
+        # Save separate COCO file
+        coco_file_name = f"{name_key}.json"
+        with open(os.path.join(parent_dir, coco_file_name), "w") as f:
+            json.dump(separated_coco, f, indent=2)
+
+        separated_cocos.append(coco_file_name)
+
+    # Check for uncovered images
+    all_img_ids = set(coco.getImgIds())
+    uncovered_img_ids = all_img_ids - covered_img_ids
+    if uncovered_img_ids:
+        uncovered_images = coco.loadImgs(list(uncovered_img_ids))
+        uncovered_filenames = [img["file_name"] for img in uncovered_images]
+        raise ValueError(f"Uncovered images found: {uncovered_filenames}")
+
+    return separated_cocos
 
 
 @app.command()
